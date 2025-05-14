@@ -1,0 +1,155 @@
+{
+  "projectMetadata": {
+    "projectName": "Hygiene VR Test Suite",
+    "formatVersion": "1.0.0",
+    "creationDate": "2025-05-14T21:41:56.388507+00:00",
+    "author": "Test Script"
+  },
+  "actionLabels": [
+    "DryHands",
+    "OpenDoor",
+    "WashHands",
+    "WearGloves"
+  ],
+  "itemLabels": [
+    "DoorHandle",
+    "GlovesBox",
+    "PaperTowel",
+    "SoapDispenser",
+    "WaterTap"
+  ],
+  "subActionLabels": [
+    "ActivateGameObject",
+    "CheckPlayerProximity",
+    "ModifyMaterial",
+    "PlayAnimation"
+  ],
+  "subActionDefinitions": {
+    "ActivateGameObject": {
+      "description": "Activates or deactivates a GameObject.",
+      "needsTargetItem": true,
+      "fields": [
+        {
+          "fieldName": "isActive",
+          "fieldType": "boolean",
+          "defaultValue": true
+        }
+      ]
+    },
+    "MoveToPosition": {
+      "description": "Moves an object to a position.",
+      "needsTargetItem": true,
+      "fields": [
+        {
+          "fieldName": "duration",
+          "fieldType": "float",
+          "defaultValue": 0.0
+        },
+        {
+          "fieldName": "targetPosition",
+          "fieldType": "Vector3"
+        }
+      ]
+    },
+    "PlayAnimation": {
+      "description": "Plays an animation on a target.",
+      "needsTargetItem": true,
+      "fields": [
+        {
+          "fieldName": "animationName",
+          "fieldType": "string"
+        },
+        {
+          "fieldName": "speed",
+          "fieldType": "float",
+          "defaultValue": 1.0
+        },
+        {
+          "fieldName": "waitForCompletion",
+          "fieldType": "boolean",
+          "defaultValue": false
+        }
+      ]
+    }
+  },
+  "actionDefinitions": {
+    "OpenDoor": {
+      "helpLabel": "Open the specified door.",
+      "description": "Activates the door opening sequence, plays animation, and handles interaction state.",
+      "subActions": [
+        {
+          "subActionLabelToUse": "PlayAnimation",
+          "propertyValues": {
+            "animationName": "Door_Open_Anim",
+            "speed": 1.0,
+            "waitForCompletion": true
+          },
+          "itemLabelForTarget": "DoorHandle"
+        },
+        {
+          "subActionLabelToUse": "ActivateGameObject",
+          "propertyValues": {
+            "isActive": false
+          },
+          "itemLabelForTarget": "DoorHandle"
+        }
+      ]
+    },
+    "WashHands": {
+      "helpLabel": "Wash hands procedure.",
+      "description": "Activates tap and simulates hand washing steps.",
+      "subActions": [
+        {
+          "subActionLabelToUse": "ActivateGameObject",
+          "propertyValues": {
+            "isActive": true
+          },
+          "itemLabelForTarget": "WaterTap"
+        },
+        {
+          "subActionLabelToUse": "MoveToPosition",
+          "propertyValues": {
+            "targetPosition": {
+              "x": 1.0,
+              "y": 0.5,
+              "z": 0.2
+            },
+            "duration": 1.0
+          },
+          "itemLabelForTarget": "SoapDispenser"
+        }
+      ]
+    }
+  },
+  "sessionActions": [
+    {
+      "sessionName": "BasicHygieneRoutine",
+      "entryNodeIds": [
+        "61d335e4-0491-4f90-ab15-b2a5590b3464"
+      ],
+      "nodes": [
+        {
+          "nodeId": "47a0611f-da43-4532-93b6-c56926b5b75c",
+          "actionLabelToExecute": "OpenDoor",
+          "childrenNodeIds": [],
+          "parentNodeId": "89640d9e-e517-458c-ae1b-0840bae3c601"
+        },
+        {
+          "nodeId": "61d335e4-0491-4f90-ab15-b2a5590b3464",
+          "actionLabelToExecute": "OpenDoor",
+          "childrenNodeIds": [
+            "89640d9e-e517-458c-ae1b-0840bae3c601"
+          ]
+        },
+        {
+          "nodeId": "89640d9e-e517-458c-ae1b-0840bae3c601",
+          "actionLabelToExecute": "WashHands",
+          "childrenNodeIds": [
+            "47a0611f-da43-4532-93b6-c56926b5b75c"
+          ],
+          "parentNodeId": "61d335e4-0491-4f90-ab15-b2a5590b3464"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "projectMetadata": {
+    "projectName": "New SessionActions Project",
+    "formatVersion": "1.0.0",
+    "creationDate": "2025-05-14T21:59:16.975103+00:00",
+    "author": ""
+  },
+  "actionLabels": [
+    "ACTION_A",
+    "ACTION_B_01",
+    "ASD"
+  ],
+  "itemLabels": [
+    "ITEM_A",
+    "ITEM_B"
+  ],
+  "subActionLabels": [
+    "SUBACTION_A",
+    "SUBACTION_B",
+    "SUBACTION_D"
+  ],
+  "subActionDefinitions": {},
+  "actionDefinitions": {},
+  "sessionActions": []
+}
