@@ -4,7 +4,7 @@
 from PySide6.QtWidgets import (
     QDialog, QHBoxLayout, QVBoxLayout, QListWidget, QListWidgetItem,
     QPushButton, QDialogButtonBox, QSplitter, QMessageBox, QInputDialog,
-    QWidget # Added QWidget
+    QWidget, QLabel, QLineEdit # Added QLabel, QLineEdit for filter
 )
 from PySide6.QtCore import Qt, Signal, Slot
 from typing import Optional, Dict, List
@@ -18,38 +18,52 @@ class ManageSubActionDefinitionsDialog(QDialog):
     """
     Dialog for managing all SubActionDefinitions in a project.
     Allows adding, removing SubActionLabels, and editing their definitions.
+    Includes filtering for the SubActionLabel list.
     """
-    # Emitted when any change is made that should mark the main project as dirty
     project_data_changed = Signal() 
 
     def __init__(self, project_data: ProjectData, parent: Optional[QWidget] = None):
         super().__init__(parent)
-        self.project_data = project_data # Direct reference to the main project data
+        self.project_data = project_data 
 
         self.setWindowTitle("Manage SubAction Definitions")
         self.setMinimumSize(800, 600)
 
         self._init_ui()
-        self._load_sub_action_labels_list()
+        self._load_sub_action_labels_list() # Initial population
+        self._apply_filter() # Apply filter (empty at first)
         
-        # Select first item if list is not empty
         if self.sub_action_labels_list_widget.count() > 0:
-            self.sub_action_labels_list_widget.setCurrentRow(0)
+            # Select the first visible item after filtering
+            for i in range(self.sub_action_labels_list_widget.count()):
+                if not self.sub_action_labels_list_widget.item(i).isHidden():
+                    self.sub_action_labels_list_widget.setCurrentRow(i)
+                    break
+            if not self.sub_action_labels_list_widget.currentItem() and self.sub_action_labels_list_widget.count() > 0 :
+                 self.sub_action_labels_list_widget.setCurrentRow(0) # Fallback if all are hidden initially (should not happen)
         else:
-            # If no labels, disable the editor part initially
             self.editor_widget.load_sub_action_definition("", None)
 
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
-
         splitter = QSplitter(Qt.Orientation.Horizontal, self)
 
-        # --- Left Panel (List of SubActionLabels) ---
+        # --- Left Panel (List of SubActionLabels with Filter) ---
         left_panel = QWidget(self)
         left_layout = QVBoxLayout(left_panel)
         
+        # Filter input
+        filter_layout = QHBoxLayout()
+        filter_layout.addWidget(QLabel("Filter:", self))
+        self.filter_input = QLineEdit(self)
+        self.filter_input.setPlaceholderText("Filter SubAction labels...")
+        self.filter_input.textChanged.connect(self._apply_filter)
+        filter_layout.addWidget(self.filter_input)
+        left_layout.addLayout(filter_layout)
+        
         self.sub_action_labels_list_widget = QListWidget(self)
+        # self.sub_action_labels_list_widget.setSortingEnabled(True) # Sorting handled by _load_sub_action_labels_list
         self.sub_action_labels_list_widget.currentItemChanged.connect(self._on_selected_sub_action_label_changed)
         left_layout.addWidget(self.sub_action_labels_list_widget)
 
@@ -70,112 +84,151 @@ class ManageSubActionDefinitionsDialog(QDialog):
         self.editor_widget.definition_changed.connect(self._on_definition_editor_changed)
         splitter.addWidget(self.editor_widget)
 
-        splitter.setSizes([250, 550]) # Initial sizes for left and right panels
+        splitter.setSizes([250, 550]) 
         main_layout.addWidget(splitter)
 
-        # --- Dialog Buttons (Close) ---
-        # Changes are applied directly to project_data, so "OK/Apply" is implicit.
-        # "Close" is enough. Unsaved changes are handled by the main window.
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close, self)
-        button_box.clicked.connect(self.accept) # Use accept to close dialog
+        button_box.clicked.connect(self.accept) 
         main_layout.addWidget(button_box)
         
         self.setLayout(main_layout)
 
     def _load_sub_action_labels_list(self):
-        """Populates the QListWidget with SubActionLabels from project_data."""
-        self.sub_action_labels_list_widget.blockSignals(True) # Avoid triggering selection change while populating
+        """Populates the QListWidget with ALL SubActionLabels from project_data. Filtering is separate."""
+        self.sub_action_labels_list_widget.blockSignals(True) 
+        
+        # Store current selection to try and restore it
+        current_selected_text = None
+        if self.sub_action_labels_list_widget.currentItem():
+            current_selected_text = self.sub_action_labels_list_widget.currentItem().text()
+
         self.sub_action_labels_list_widget.clear()
         
-        # Sort labels alphabetically for display
         sorted_labels = sorted(self.project_data.sub_action_labels)
         for label in sorted_labels:
             self.sub_action_labels_list_widget.addItem(QListWidgetItem(label))
             
         self.sub_action_labels_list_widget.blockSignals(False)
+        
+        # Re-apply filter which will also handle visibility
+        self._apply_filter() 
 
-        # After loading, if there are items, select the first one to trigger loading its definition
-        # Or restore previous selection if that's desired (more complex)
-        if self.sub_action_labels_list_widget.count() > 0:
-            # If no item is current, set the first one.
-            # This will also trigger _on_selected_sub_action_label_changed if an item becomes current.
-            if not self.sub_action_labels_list_widget.currentItem():
-                 self.sub_action_labels_list_widget.setCurrentRow(0)
-            else: # If an item was already current (e.g. after add/remove), re-trigger selection
-                 self._on_selected_sub_action_label_changed(self.sub_action_labels_list_widget.currentItem(), None)
+        # Try to restore selection if possible
+        if current_selected_text:
+            items = self.sub_action_labels_list_widget.findItems(current_selected_text, Qt.MatchFlag.MatchExactly)
+            if items and not items[0].isHidden():
+                self.sub_action_labels_list_widget.setCurrentItem(items[0])
+            elif self.sub_action_labels_list_widget.count() > 0: # If old selection gone or hidden, select first visible
+                for i in range(self.sub_action_labels_list_widget.count()):
+                    if not self.sub_action_labels_list_widget.item(i).isHidden():
+                        self.sub_action_labels_list_widget.setCurrentRow(i)
+                        break
+        elif self.sub_action_labels_list_widget.count() > 0: # Default to first visible if no prior selection
+            for i in range(self.sub_action_labels_list_widget.count()):
+                if not self.sub_action_labels_list_widget.item(i).isHidden():
+                    self.sub_action_labels_list_widget.setCurrentRow(i)
+                    break
+        
+        # If still no selection and list is not empty (e.g. all items hidden by filter)
+        # then trigger a selection change with None to clear the editor.
+        if not self.sub_action_labels_list_widget.currentItem() and self.sub_action_labels_list_widget.count() > 0 :
+            self._on_selected_sub_action_label_changed(None, None)
+        elif self.sub_action_labels_list_widget.count() == 0: # List is truly empty
+             self._on_selected_sub_action_label_changed(None, None)
 
-        else: # No labels exist
-            self.editor_widget.load_sub_action_definition("", None)
+
+    @Slot(str)
+    def _apply_filter(self):
+        """Filters the items in the list widget based on the filter text."""
+        filter_text = self.filter_input.text().lower()
+        first_visible_item = None
+        current_item_still_visible = False
+        selected_item_text = self.sub_action_labels_list_widget.currentItem().text() if self.sub_action_labels_list_widget.currentItem() else None
+
+        for i in range(self.sub_action_labels_list_widget.count()):
+            item = self.sub_action_labels_list_widget.item(i)
+            if item:
+                item_is_visible = filter_text in item.text().lower()
+                item.setHidden(not item_is_visible)
+                if item_is_visible and not first_visible_item:
+                    first_visible_item = item
+                if item.text() == selected_item_text and item_is_visible:
+                    current_item_still_visible = True
+        
+        # If current selection is now hidden, try to select the first visible item
+        if selected_item_text and not current_item_still_visible:
+            if first_visible_item:
+                self.sub_action_labels_list_widget.setCurrentItem(first_visible_item)
+            else: # No items are visible with current filter
+                self._on_selected_sub_action_label_changed(None, self.sub_action_labels_list_widget.currentItem()) # Clear editor
+        elif not selected_item_text and first_visible_item: # If no selection but there are visible items
+             self.sub_action_labels_list_widget.setCurrentItem(first_visible_item)
 
 
     @Slot(QListWidgetItem, QListWidgetItem)
     def _on_selected_sub_action_label_changed(self, current: Optional[QListWidgetItem], previous: Optional[QListWidgetItem]):
-        """Loads the definition for the newly selected SubActionLabel."""
         if current:
             label_key = current.text()
             definition = self.project_data.sub_action_definitions.get(label_key)
             if definition:
                 self.editor_widget.load_sub_action_definition(label_key, definition)
             else:
-                # This case should ideally not happen if data is consistent
-                QMessageBox.critical(self, "Data Error", f"No definition found for SubActionLabel '{label_key}'.")
-                self.editor_widget.load_sub_action_definition(label_key, None) # Clear editor
+                # This can happen if a label was added but its definition was not (the bug)
+                # Or if data is inconsistent.
+                QMessageBox.warning(self, "Data Inconsistency", f"No definition found for SubActionLabel '{label_key}'. Please check project data or re-add if necessary.")
+                self.editor_widget.load_sub_action_definition(label_key, None) 
         else:
-            # No item selected, clear the editor
             self.editor_widget.load_sub_action_definition("", None)
 
     @Slot()
     def _add_new_sub_action_label(self):
-        """Prompts for a new SubActionLabel, adds it, and creates an empty definition."""
         new_label, ok = QInputDialog.getText(self, "Add New SubActionLabel", "Enter name for the new SubActionLabel:")
         if ok and new_label:
             new_label = new_label.strip()
             if not new_label:
-                QMessageBox.warning(self, "Input Error", "SubActionLabel name cannot be empty.")
-                return
+                QMessageBox.warning(self, "Input Error", "SubActionLabel name cannot be empty."); return
 
-            # Check for duplicates (case-insensitive)
             if any(new_label.lower() == lbl.lower() for lbl in self.project_data.sub_action_labels):
-                QMessageBox.warning(self, "Duplicate Label", f"The SubActionLabel '{new_label}' already exists.")
-                return
+                QMessageBox.warning(self, "Duplicate Label", f"The SubActionLabel '{new_label}' already exists."); return
 
-            # Add to project_data
             self.project_data.sub_action_labels.append(new_label)
-            self.project_data.sub_action_definitions[new_label] = SubActionDefinition() # Create empty definition
+            # CRITICAL FIX: Also create the definition object
+            self.project_data.sub_action_definitions[new_label] = SubActionDefinition() 
 
-            self._load_sub_action_labels_list() # Refresh the list
+            self._load_sub_action_labels_list() # Refresh & re-filter
 
-            # Find and select the newly added item
             items = self.sub_action_labels_list_widget.findItems(new_label, Qt.MatchFlag.MatchExactly)
-            if items:
+            if items and not items[0].isHidden(): # Select if visible
                 self.sub_action_labels_list_widget.setCurrentItem(items[0])
             
-            self.project_data_changed.emit() # Signal that project data has changed
+            self.project_data_changed.emit() 
         elif ok and not new_label:
              QMessageBox.warning(self, "Input Error", "SubActionLabel name cannot be empty.")
 
-
     @Slot()
     def _remove_selected_sub_action_label(self):
-        """Removes the selected SubActionLabel and its definition."""
         current_item = self.sub_action_labels_list_widget.currentItem()
         if not current_item:
-            QMessageBox.information(self, "No Selection", "Please select a SubActionLabel to remove.")
-            return
+            QMessageBox.information(self, "No Selection", "Please select a SubActionLabel to remove."); return
 
         label_to_remove = current_item.text()
 
-        # TODO: Add check here: is this SubActionLabel used by any ActionDefinition?
-        # If so, warn the user or prevent deletion. For now, simple removal.
-        # Example check (would require access to all ActionDefinitions):
-        # is_used = any(
-        #    configured_sa.sub_action_label_to_use == label_to_remove
-        #    for action_def in self.project_data.action_definitions.values()
-        #    for configured_sa in action_def.sub_actions
-        # )
-        # if is_used:
-        #     QMessageBox.warning(self, "Cannot Remove", f"SubActionLabel '{label_to_remove}' is currently in use by one or more Action Definitions.")
-        #     return
+        # --- Data Integrity Check ---
+        is_used = False
+        for action_def in self.project_data.action_definitions.values():
+            for conf_sub_action in action_def.sub_actions:
+                if conf_sub_action.sub_action_label_to_use == label_to_remove:
+                    is_used = True
+                    break
+            if is_used:
+                break
+        
+        if is_used:
+            QMessageBox.warning(self, "Cannot Remove", 
+                                f"SubActionLabel '{label_to_remove}' is currently in use by one or more Action Definitions. "
+                                "Please remove its usages first.")
+            return
+        # --- End of Data Integrity Check ---
 
         reply = QMessageBox.question(
             self, "Confirm Removal",
@@ -190,13 +243,9 @@ class ManageSubActionDefinitionsDialog(QDialog):
             if label_to_remove in self.project_data.sub_action_definitions:
                 del self.project_data.sub_action_definitions[label_to_remove]
             
-            self._load_sub_action_labels_list() # Refresh list (will also clear editor if list becomes empty or selection changes)
+            self._load_sub_action_labels_list() 
             self.project_data_changed.emit()
 
     @Slot()
     def _on_definition_editor_changed(self):
-        """Called when the SubActionDefinitionEditorWidget signals a change."""
-        # The editor widget modifies the SubActionDefinition object directly.
-        # We just need to signal that the overall project data is now dirty.
         self.project_data_changed.emit()
-

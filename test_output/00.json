@@ -107,7 +107,9 @@
         {
           "nodeId": "1124d750-bcb2-4652-a448-b6163a06b10b",
           "actionLabelToExecute": "ACTIVATE_STETHOSCOPE",
-          "childrenNodeIds": [],
+          "childrenNodeIds": [
+            "665ba636-6646-44e2-b4b4-f260438542e9"
+          ],
           "parentNodeId": "455377f5-b497-4ede-a60c-1d469e011f3c"
         },
         {
@@ -150,6 +152,12 @@
           "nodeId": "590f694d-0689-4741-8b60-be311e528ed7",
           "actionLabelToExecute": "ACTIVATE_DOOR",
           "childrenNodeIds": []
+        },
+        {
+          "nodeId": "665ba636-6646-44e2-b4b4-f260438542e9",
+          "actionLabelToExecute": "ACIVATE TERMOMETER",
+          "childrenNodeIds": [],
+          "parentNodeId": "1124d750-bcb2-4652-a448-b6163a06b10b"
         },
         {
           "nodeId": "7d334b69-280c-4d91-bc8c-3fec9e40abb7",

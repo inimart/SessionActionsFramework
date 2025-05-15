@@ -14,14 +14,14 @@ from PySide6.QtCore import Qt, Slot
 
 from ..project_io import json_handler
 from ..data_models.project_data import ProjectData
-from ..data_models.sub_action_definition import SubActionDefinition 
-from ..data_models.action_definition import ActionDefinition 
-from ..data_models.session_graph import SessionActionsGraph 
+# from ..data_models.sub_action_definition import SubActionDefinition # Not directly used here
+# from ..data_models.action_definition import ActionDefinition # Not directly used here
+# from ..data_models.session_graph import SessionActionsGraph # Not directly used here
 
 from .widgets.label_editor_widget import LabelEditorWidget
 from .dialogs.manage_sub_action_definitions_dialog import ManageSubActionDefinitionsDialog
 from .dialogs.manage_action_definitions_dialog import ManageActionDefinitionsDialog
-from .dialogs.manage_session_actions_dialog import ManageSessionActionsDialog # This should now use the flow editor
+from .dialogs.manage_session_actions_dialog import ManageSessionActionsDialog
 
 
 class MainWindow(QMainWindow):
@@ -42,13 +42,13 @@ class MainWindow(QMainWindow):
 
         central_widget = QWidget(self)
         self.main_layout = QVBoxLayout(central_widget) 
-        self.placeholder_label = QLabel("Welcome! Open or create a project.\nUse 'Manage' menu to edit definitions and session flows.", self) # Updated placeholder
+        self.placeholder_label = QLabel("Welcome! Open or create a project.\nUse 'Manage' menu to edit definitions and session flows.", self)
+        self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(self.placeholder_label)
         self.setCentralWidget(central_widget)
 
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu("&File")
-        # ... (File menu actions as before) ...
         new_action = QAction("&New Project", self); new_action.setShortcut(QKeySequence.StandardKey.New); new_action.triggered.connect(self.new_project_action); file_menu.addAction(new_action)
         open_action = QAction("&Open Project...", self); open_action.setShortcut(QKeySequence.StandardKey.Open); open_action.triggered.connect(self.open_project_action); file_menu.addAction(open_action)
         file_menu.addSeparator()
@@ -57,34 +57,34 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         exit_action = QAction("E&xit", self); exit_action.setShortcut(QKeySequence.StandardKey.Quit); exit_action.triggered.connect(self.close); file_menu.addAction(exit_action)
 
-
         manage_menu = menu_bar.addMenu("&Manage")
-        # ... (Label, SubActionDef, ActionDef editors as before) ...
-        edit_action_labels_action = QAction("Edit &ActionLabels...", self); edit_action_labels_action.triggered.connect(self.edit_action_labels); manage_menu.addAction(edit_action_labels_action)
-        edit_item_labels_action = QAction("Edit &ItemLabels...", self); edit_item_labels_action.triggered.connect(self.edit_item_labels); manage_menu.addAction(edit_item_labels_action)
-        edit_subaction_labels_action = QAction("Edit &SubActionLabels...", self); edit_subaction_labels_action.triggered.connect(self.edit_subaction_labels); manage_menu.addAction(edit_subaction_labels_action)
+        
+        # "Edit ItemLabels..." is kept as ItemLabels are simple strings
+        edit_item_labels_action = QAction("Edit &ItemLabels...", self)
+        edit_item_labels_action.triggered.connect(self.edit_item_labels)
+        manage_menu.addAction(edit_item_labels_action)
+        
         manage_menu.addSeparator() 
+        
+        # "Edit ActionLabels" and "Edit SubActionLabels" are removed.
+        # These labels will be managed directly within their respective definition dialogs.
+
         edit_subaction_defs_action = QAction("Edit SubAction &Definitions...", self)
         edit_subaction_defs_action.triggered.connect(self.edit_sub_action_definitions)
         manage_menu.addAction(edit_subaction_defs_action)
-        manage_menu.addSeparator() 
+        
+        # manage_menu.addSeparator() # Separator can be removed if next item is related
         edit_action_defs_action = QAction("Edit Action De&finitions...", self)
         edit_action_defs_action.triggered.connect(self.edit_action_definitions) 
         manage_menu.addAction(edit_action_defs_action)
-        manage_menu.addSeparator()
         
-        # Updated Menu item text for Session Flows
-        edit_session_flows_action = QAction("Edit Session &Flows...", self) # MODIFIED TEXT
-        edit_session_flows_action.triggered.connect(self.edit_session_graphs) # Slot name can remain generic
+        manage_menu.addSeparator()
+        edit_session_flows_action = QAction("Edit Session &Flows...", self) 
+        edit_session_flows_action.triggered.connect(self.edit_session_graphs) 
         manage_menu.addAction(edit_session_flows_action)
 
         self.statusBar().showMessage("Ready")
 
-    # ... (Tutti gli altri metodi della MainWindow rimangono invariati, inclusi _update_window_title,
-    #      _check_unsaved_changes, mark_dirty, new_project_action, new_project, open_project_action,
-    #      save_project_action, save_project_as_action, _open_label_editor_dialog,
-    #      edit_action_labels, edit_item_labels, edit_subaction_labels,
-    #      edit_sub_action_definitions, edit_action_definitions, edit_session_graphs, closeEvent)
     def _update_window_title(self):
         base_title = "SessionActions Framework Tool"
         project_name_part = "Untitled"
@@ -171,27 +171,34 @@ class MainWindow(QMainWindow):
             return self.save_project_action() 
         return False
 
+    # edit_action_labels and edit_subaction_labels are removed.
+    # The LabelEditorWidget is now only used for ItemLabels.
+    @Slot()
+    def edit_item_labels(self):
+        if self.current_project_data: 
+            self._open_label_editor_dialog(
+                title="Edit ItemLabels", 
+                getter=lambda: self.current_project_data.item_labels, 
+                setter=lambda lst: setattr(self.current_project_data, 'item_labels', lst)
+            )
+
     def _open_label_editor_dialog(self, title: str, getter: Callable[[], List[str]], setter: Callable[[List[str]], None]):
+        # This function is now only for ItemLabels
         if not self.current_project_data:
             QMessageBox.information(self, "No Project", "Please open or create a project first.")
             return
         dialog = QDialog(self); dialog.setWindowTitle(title); dialog.setMinimumWidth(400); dialog.setMinimumHeight(300)
         layout = QVBoxLayout(dialog)
-        editor_widget = LabelEditorWidget(get_labels_func=getter, set_labels_func=setter, parent=dialog)
+        # LabelEditorWidget is still used here for ItemLabels
+        editor_widget = LabelEditorWidget(
+            widget_title=title, # Pass title to widget if it uses it
+            get_labels_func=getter, 
+            set_labels_func=setter, 
+            parent=dialog
+        )
         editor_widget.labels_changed.connect(lambda: self.mark_dirty(True))
         layout.addWidget(editor_widget); dialog.setLayout(layout); dialog.exec()
 
-    @Slot()
-    def edit_action_labels(self):
-        if self.current_project_data: self._open_label_editor_dialog(title="Edit ActionLabels", getter=lambda: self.current_project_data.action_labels, setter=lambda lst: setattr(self.current_project_data, 'action_labels', lst))
-
-    @Slot()
-    def edit_item_labels(self):
-        if self.current_project_data: self._open_label_editor_dialog(title="Edit ItemLabels", getter=lambda: self.current_project_data.item_labels, setter=lambda lst: setattr(self.current_project_data, 'item_labels', lst))
-
-    @Slot()
-    def edit_subaction_labels(self):
-        if self.current_project_data: self._open_label_editor_dialog(title="Edit SubActionLabels", getter=lambda: self.current_project_data.sub_action_labels, setter=lambda lst: setattr(self.current_project_data, 'sub_action_labels', lst))
 
     @Slot()
     def edit_sub_action_definitions(self):
@@ -212,7 +219,7 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     @Slot()
-    def edit_session_graphs(self): # Nome dello slot può rimanere generico
+    def edit_session_graphs(self): 
         if not self.current_project_data:
             QMessageBox.information(self, "No Project", "Please open or create a project first.")
             return

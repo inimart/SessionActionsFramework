@@ -6,7 +6,7 @@ import os
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QScrollArea,
     QFrame, QGridLayout, QSpacerItem, QSizePolicy, QMenu,
-    QMessageBox, QInputDialog, QApplication, QMainWindow # Added QMainWindow for test
+    QMessageBox, QInputDialog, QApplication, QMainWindow 
 )
 from PySide6.QtGui import QAction, QCursor, QColor, QPalette
 from PySide6.QtCore import Qt, Signal, Slot, QPoint
@@ -23,9 +23,6 @@ from .action_card_widget import ActionCardWidget
 
 
 class SessionFlowEditorWidget(QWidget):
-    """
-    A widget for editing a SessionActionsGraph using a step-based, modular grid/row UI.
-    """
     session_graph_changed = Signal()
     action_node_selected = Signal(object) 
 
@@ -37,33 +34,28 @@ class SessionFlowEditorWidget(QWidget):
         self._action_card_widgets: Dict[str, ActionCardWidget] = {}
         self._selected_action_card: Optional[ActionCardWidget] = None
         self._step_frames: Dict[str, QFrame] = {} 
-
         self._init_ui()
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0,0,0,0)
-
         self.session_name_display = QLabel("Editing Session: [No Session Loaded]")
         self.session_name_display.setStyleSheet("font-weight: bold; padding: 5px;")
         main_layout.addWidget(self.session_name_display)
-
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidgetResizable(True)
-        self.steps_container_widget = QWidget() # This widget will contain the layout of all steps
-        self.steps_layout = QVBoxLayout(self.steps_container_widget) # Steps are stacked vertically
+        self.steps_container_widget = QWidget()
+        self.steps_layout = QVBoxLayout(self.steps_container_widget)
         self.steps_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.steps_layout.setSpacing(10) 
         self.scroll_area.setWidget(self.steps_container_widget)
         main_layout.addWidget(self.scroll_area)
-
         buttons_layout = QHBoxLayout()
         self.create_step_button = QPushButton("Create New Step", self)
         self.create_step_button.clicked.connect(self._create_new_step)
         buttons_layout.addWidget(self.create_step_button)
         buttons_layout.addStretch()
         main_layout.addLayout(buttons_layout)
-
         self.setLayout(main_layout)
         self._enable_editing_controls(False)
 
@@ -80,13 +72,9 @@ class SessionFlowEditorWidget(QWidget):
         self._selected_action_card = None
         self.action_node_selected.emit(None)
         self._step_frames.clear()
-
-        # Clear previous steps from the layout
         while self.steps_layout.count():
             child = self.steps_layout.takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
-        
+            if child.widget(): child.widget().deleteLater()
         if graph:
             self.session_name_display.setText(f"Editing Session: {session_name}")
             self._populate_steps_display(graph)
@@ -97,12 +85,10 @@ class SessionFlowEditorWidget(QWidget):
 
     def _populate_steps_display(self, graph: SessionActionsGraph):
         if not graph or not graph.steps:
-            # Remove any existing "no steps" label before adding a new one
             for i in reversed(range(self.steps_layout.count())):
                 item = self.steps_layout.itemAt(i)
                 if isinstance(item.widget(), QLabel) and "This session has no steps" in item.widget().text():
                     item.widget().deleteLater()
-                    
             no_steps_label = QLabel("This session has no steps. Click 'Create New Step' to begin.")
             no_steps_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.steps_layout.addWidget(no_steps_label)
@@ -111,41 +97,35 @@ class SessionFlowEditorWidget(QWidget):
         for step_index, step_def in enumerate(graph.steps):
             step_widget = self._create_step_widget(step_def, step_index, graph)
             self.steps_layout.addWidget(step_widget)
-            self._step_frames[step_def.step_id] = step_widget # Keep track of step frames
-        
-        self.steps_layout.addStretch() # Push steps to the top
+            self._step_frames[step_def.step_id] = step_widget
+        self.steps_layout.addStretch()
 
     def _create_step_widget(self, step_def: StepDefinition, step_index: int, graph: SessionActionsGraph) -> QFrame:
         step_frame = QFrame(self)
-        step_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        step_frame.setFrameShape(QFrame.Shape.StyledPanel); step_frame.setLineWidth(1)
         step_frame.setObjectName(f"StepFrame_{step_def.step_id}")
         step_frame.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         step_frame.customContextMenuRequested.connect(
             lambda pos, current_sd=step_def, current_frame=step_frame: self._show_step_context_menu(pos, current_sd, current_frame)
         )
-        step_frame.setProperty("step_definition_obj", step_def) # Store data with widget
-
+        step_frame.setProperty("step_definition_obj", step_def)
         step_main_layout = QVBoxLayout(step_frame)
-        step_main_layout.setContentsMargins(5,5,5,5)
-        step_main_layout.setSpacing(3)
-
+        step_main_layout.setContentsMargins(5,5,5,5); step_main_layout.setSpacing(5)
         title_text = f"Step {step_index}"
         if step_def.step_name: title_text += f": {step_def.step_name}"
         step_title_label = QLabel(title_text)
-        step_title_label.setStyleSheet("font-weight: bold; background-color: #D8D8D8; padding: 5px; border-radius: 3px;")
+        step_title_label.setStyleSheet("font-weight: bold; background-color: #E8E8E8; padding: 5px; border-radius: 3px;")
         step_main_layout.addWidget(step_title_label)
-
         action_grid_container = QWidget(step_frame) 
         action_grid_layout = QGridLayout(action_grid_container)
         action_grid_layout.setSpacing(5) 
         action_grid_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         step_main_layout.addWidget(action_grid_container)
-
         self._build_action_grid_for_step(step_def, graph, action_grid_layout)
         return step_frame
 
     def _build_action_grid_for_step(self, step_def: StepDefinition, graph: SessionActionsGraph, grid_layout: QGridLayout):
-        while grid_layout.count(): # Clear previous grid content
+        while grid_layout.count():
             item = grid_layout.takeAt(0)
             if item and item.widget(): item.widget().deleteLater()
         
@@ -154,130 +134,111 @@ class SessionFlowEditorWidget(QWidget):
             return
         
         base_colors = [
-            QColor(220,220,250), QColor(200,240,200), QColor(250,220,200), 
+            QColor(230,230,250), QColor(200,240,200), QColor(250,220,200), 
             QColor(200,220,250), QColor(250,200,220), QColor(220,250,220)
         ]
         
-        current_grid_col_start_for_root_branch = 0
+        current_grid_col_for_next_root_branch = 0
         for root_idx, root_node_id in enumerate(step_def.root_node_ids):
             branch_color = base_colors[root_idx % len(base_colors)]
-            
-            # Each root_node_id starts at row 0 of its allocated column block.
-            # The recursive function returns the max_row used and total_cols_spanned by this root's branch.
-            _max_row, cols_spanned = self._layout_action_branch_recursive(
+            # Layout the branch starting at row 0 of the current available column block
+            _max_row_in_branch, cols_spanned_by_branch = self._layout_action_branch_recursive(
                 root_node_id, graph, grid_layout, branch_color, 
-                0, current_grid_col_start_for_root_branch, 
-                is_root_of_branch=True
+                0, current_grid_col_for_next_root_branch # Start column for this root branch
             )
-            current_grid_col_start_for_root_branch += cols_spanned
+            current_grid_col_for_next_root_branch += cols_spanned_by_branch
         
-        grid_layout.setColumnStretch(grid_layout.columnCount(), 1)
+        if grid_layout.columnCount() > 0 : grid_layout.setColumnStretch(grid_layout.columnCount(), 1)
+        if grid_layout.rowCount() > 0 : grid_layout.setRowStretch(grid_layout.rowCount(), 1)
 
     def _layout_action_branch_recursive(self, 
-                                        node_id: str, 
-                                        graph: SessionActionsGraph, 
-                                        grid_layout: QGridLayout, 
-                                        branch_color: QColor, 
-                                        current_row: int, 
-                                        current_col: int,
-                                        is_root_of_branch: bool) -> Tuple[int, int]: # Returns (max_row_used_in_this_branch, cols_spanned_by_this_node_and_its_parallel_children)
+                                      node_id: str, 
+                                      graph: SessionActionsGraph, 
+                                      grid_layout: QGridLayout, 
+                                      branch_color: QColor, 
+                                      current_row: int, 
+                                      start_col_for_this_node: int) -> Tuple[int, int]:
         action_node = graph.get_node_by_id(node_id)
         if not action_node: 
-            return current_row, 1 # Occupies one cell for error/placeholder
+            # Add a placeholder for missing node to maintain grid structure
+            # grid_layout.addWidget(QLabel(f"Missing {node_id[:4]}"), current_row, start_col_for_this_node)
+            return current_row, 1 # Occupies one cell
 
-        card_color = branch_color # All nodes in a branch (started by a root) share the base color
-        
-        card = ActionCardWidget(action_node, self.project_data_ref, card_color, self)
+        card = ActionCardWidget(action_node, self.project_data_ref, branch_color, self)
         card.clicked.connect(self._on_action_card_selected)
         card.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         card.customContextMenuRequested.connect(
             lambda pos, an=action_node, cw=card: self._show_action_card_context_menu(pos, an, cw)
         )
-        # Add the card for the current node
-        grid_layout.addWidget(card, current_row, current_col)
-        self._action_card_widgets[action_node.node_id] = card
-
-        max_row_in_this_branch = current_row
-        total_cols_spanned_by_this_node_and_children = 1 # Current node spans at least one column
+        
+        max_row_occupied_by_branch = current_row # This node occupies the current_row
+        cols_spanned_by_this_node = 1 # Default span for this node itself
 
         if action_node.children_node_ids:
             next_row_for_children = current_row + 1
-            child_col_offset = 0 # Relative to current_col for placing children side-by-side
+            current_col_offset_for_children = 0 # Relative to start_col_for_this_node
 
-            for child_idx, child_id in enumerate(action_node.children_node_ids):
-                # Each child is laid out starting in the row below the current node.
-                # The column for the first child is the same as the parent.
-                # Subsequent parallel children are offset horizontally.
-                child_start_col = current_col + child_col_offset
-                
-                max_row_from_child_branch, cols_spanned_by_child_branch = self._layout_action_branch_recursive(
-                    child_id, graph, grid_layout, branch_color, 
-                    next_row_for_children, 
-                    child_start_col,
-                    is_root_of_branch=False # Children are not roots of a new color branch
+            for child_id in action_node.children_node_ids:
+                # Recursively layout child branch. It starts in the row below the current node.
+                # Its column starts at start_col_for_this_node + current_col_offset_for_children.
+                max_row_in_child_branch, cols_spanned_by_child = self._layout_action_branch_recursive(
+                    child_id, graph, grid_layout, branch_color,
+                    next_row_for_children,
+                    start_col_for_this_node + current_col_offset_for_children
                 )
-                max_row_in_this_branch = max(max_row_in_this_branch, max_row_from_child_branch)
-                
-                # The total columns spanned by this node is the sum of columns spanned by its parallel children branches.
-                if child_idx == 0: # First child sets the baseline
-                    total_cols_spanned_by_this_node_and_children = cols_spanned_by_child_branch
-                else: # Subsequent children add to the total span if they are wider
-                     total_cols_spanned_by_this_node_and_children = child_col_offset + cols_spanned_by_child_branch
-                
-                child_col_offset += cols_spanned_by_child_branch # Next parallel child starts after the columns used by this one
-
-        return max_row_in_this_branch, total_cols_spanned_by_this_node_and_children
+                max_row_occupied_by_branch = max(max_row_occupied_by_branch, max_row_in_child_branch)
+                current_col_offset_for_children += cols_spanned_by_child
+            
+            # The current node should span all the columns its children collectively occupy
+            if current_col_offset_for_children > 0:
+                cols_spanned_by_this_node = current_col_offset_for_children
+        
+        # Add the current node's card to the grid, potentially spanning columns
+        grid_layout.addWidget(card, current_row, start_col_for_this_node, 1, cols_spanned_by_this_node)
+        self._action_card_widgets[action_node.node_id] = card
+        
+        return max_row_occupied_by_branch, cols_spanned_by_this_node
 
     @Slot(str)
     def _on_action_card_selected(self, node_id: str):
         if self._selected_action_card and self._selected_action_card.action_node.node_id != node_id:
             self._selected_action_card.set_selected(False)
-        
         self._selected_action_card = self._action_card_widgets.get(node_id)
         if self._selected_action_card:
             self._selected_action_card.set_selected(True)
             self.action_node_selected.emit(self._selected_action_card.action_node)
-        else:
-            self.action_node_selected.emit(None)
+        else: self.action_node_selected.emit(None)
 
     @Slot(QPoint)
     def _show_step_context_menu(self, position: QPoint, step_def: StepDefinition, step_frame_widget: QFrame):
         menu = QMenu(self)
         add_root_action = menu.addAction("Add Action to Step (Root)")
-        add_root_action.triggered.connect(lambda checked=False, sd=step_def: self._handle_add_action_to_step(sd))
-        
-        # Move Step Up/Down (requires finding index of step_frame_widget in self.steps_layout)
+        add_root_action.triggered.connect(lambda: self._handle_add_action_to_step(step_def))
         current_step_index = -1
-        for i in range(self.steps_layout.count()):
-            item = self.steps_layout.itemAt(i)
-            if item and item.widget() == step_frame_widget:
-                current_step_index = i
-                break
-        
+        if self._current_session_graph:
+            try: current_step_index = self._current_session_graph.steps.index(step_def)
+            except ValueError: pass 
         if current_step_index != -1:
             menu.addSeparator()
             move_step_up = menu.addAction("Move Step Up")
             move_step_up.setEnabled(current_step_index > 0)
-            move_step_up.triggered.connect(lambda: self._handle_move_step(step_def, "up", current_step_index))
-            
+            move_step_up.triggered.connect(lambda: self._handle_move_step(step_def, "up"))
             move_step_down = menu.addAction("Move Step Down")
             move_step_down.setEnabled(current_step_index < len(self._current_session_graph.steps) -1 if self._current_session_graph else False)
-            move_step_down.triggered.connect(lambda: self._handle_move_step(step_def, "down", current_step_index))
-
-
+            move_step_down.triggered.connect(lambda: self._handle_move_step(step_def, "down"))
         menu.addSeparator()
         remove_step = menu.addAction("Remove This Step")
-        remove_step.triggered.connect(lambda checked=False, sd=step_def: self._handle_remove_step(sd))
+        remove_step.triggered.connect(lambda: self._handle_remove_step(step_def))
         menu.exec(step_frame_widget.mapToGlobal(position))
 
     @Slot(QPoint)
     def _show_action_card_context_menu(self, position: QPoint, action_node: ActionNode, card_widget: ActionCardWidget):
         menu = QMenu(self)
         add_child_action = menu.addAction(f"Add Child Action to '{action_node.action_label_to_execute}'")
-        add_child_action.triggered.connect(lambda checked=False, an=action_node: self._handle_add_child_action(an))
+        add_child_action.triggered.connect(lambda: self._handle_add_child_action(action_node))
         menu.addSeparator()
         remove_action = menu.addAction(f"Remove Action '{action_node.action_label_to_execute}'")
-        remove_action.triggered.connect(lambda checked=False, an=action_node: self._handle_remove_action_node(an))
+        remove_action.triggered.connect(lambda: self._handle_remove_action_node(action_node))
         menu.exec(card_widget.mapToGlobal(position))
 
     @Slot()
@@ -290,26 +251,21 @@ class SessionFlowEditorWidget(QWidget):
         self.load_session_graph(self._current_session_name, self._current_session_graph)
         self.session_graph_changed.emit()
 
-    def _handle_move_step(self, step_to_move: StepDefinition, direction: str, current_idx: int):
+    def _handle_move_step(self, step_to_move: StepDefinition, direction: str):
         if not self._current_session_graph: return
-        
-        steps_list = self._current_session_graph.steps
-        
-        if direction == "up" and current_idx > 0:
-            steps_list.pop(current_idx)
-            steps_list.insert(current_idx - 1, step_to_move)
-        elif direction == "down" and current_idx < len(steps_list) - 1:
-            steps_list.pop(current_idx)
-            steps_list.insert(current_idx + 1, step_to_move)
-        else:
-            return # Cannot move
-
-        self.load_session_graph(self._current_session_name, self._current_session_graph) # Full refresh
-        self.session_graph_changed.emit()
-
+        try:
+            current_idx = self._current_session_graph.steps.index(step_to_move)
+            steps_list = self._current_session_graph.steps
+            if direction == "up" and current_idx > 0:
+                steps_list.pop(current_idx); steps_list.insert(current_idx - 1, step_to_move)
+            elif direction == "down" and current_idx < len(steps_list) - 1:
+                steps_list.pop(current_idx); steps_list.insert(current_idx + 1, step_to_move)
+            else: return 
+            self.load_session_graph(self._current_session_name, self._current_session_graph)
+            self.session_graph_changed.emit()
+        except ValueError: QMessageBox.critical(self, "Error", "Could not find step in data model to move.")
 
     def _handle_add_action_to_step(self, step_def: StepDefinition):
-        # (Logic come prima)
         if not self._current_session_graph or not self.project_data_ref: return
         if not self.project_data_ref.action_definitions:
             QMessageBox.warning(self, "No Actions Defined", "Please define some Actions first."); return
@@ -323,7 +279,6 @@ class SessionFlowEditorWidget(QWidget):
         self.session_graph_changed.emit()
 
     def _handle_add_child_action(self, parent_action_node: ActionNode):
-        # (Logic come prima)
         if not self._current_session_graph or not self.project_data_ref: return
         if not self.project_data_ref.action_definitions:
             QMessageBox.warning(self, "No Actions Defined", "Please define some Actions first."); return
@@ -337,7 +292,6 @@ class SessionFlowEditorWidget(QWidget):
         self.session_graph_changed.emit()
 
     def _handle_remove_step(self, step_to_remove: StepDefinition):
-        # (Logic come prima)
         if not self._current_session_graph: return
         reply = QMessageBox.question(self, "Confirm Removal", f"Remove Step '{step_to_remove.step_name or step_to_remove.step_id[:8]}' and ALL its actions?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if reply == QMessageBox.StandardButton.Yes:
@@ -358,7 +312,6 @@ class SessionFlowEditorWidget(QWidget):
             self.session_graph_changed.emit()
 
     def _handle_remove_action_node(self, action_to_remove: ActionNode):
-        # (Logic come prima)
         if not self._current_session_graph: return
         reply = QMessageBox.question(self, "Confirm Removal", f"Remove Action '{action_to_remove.action_label_to_execute}' and ALL its child actions?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if reply == QMessageBox.StandardButton.Yes:
@@ -386,9 +339,8 @@ class SessionFlowEditorWidget(QWidget):
             self.load_session_graph(self._current_session_name, self._current_session_graph)
             self.session_graph_changed.emit()
 
-# (Standalone test code ommitted for brevity)
+# Standalone test
 if __name__ == '__main__':
-    # Bootstrap for standalone execution
     if __package__ is None: 
         current_script_dir = os.path.dirname(os.path.abspath(__file__))
         gui_dir = os.path.dirname(current_script_dir)
@@ -405,37 +357,37 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     dummy_project = TestProjectData()
-    dummy_project.action_definitions["ActionA"] = TestActionDef(help_label="Do Action A")
-    dummy_project.action_definitions["ActionB"] = TestActionDef(description="Perform the B task")
-    dummy_project.action_definitions["ActionC"] = TestActionDef(help_label="Complete C")
-    dummy_project.action_definitions["ActionD"] = TestActionDef(help_label="Do D")
-    dummy_project.action_definitions["ActionE"] = TestActionDef(help_label="Do E")
-    dummy_project.action_definitions["ActionF"] = TestActionDef(help_label="Do F")
-    dummy_project.action_definitions["ActionG"] = TestActionDef(help_label="Do G")
-    dummy_project.action_definitions["ActionH"] = TestActionDef(help_label="Do H")
+    dummy_project.action_definitions["ActionA"] = TestActionDef(help_label="A: First Root")
+    dummy_project.action_definitions["ActionB"] = TestActionDef(description="B: Second Root")
+    dummy_project.action_definitions["ActionC"] = TestActionDef(help_label="C: Child of A")
+    dummy_project.action_definitions["ActionD"] = TestActionDef(help_label="D: Child of A (parallel to C)")
+    dummy_project.action_definitions["ActionE"] = TestActionDef(help_label="E: Child of C")
+    dummy_project.action_definitions["ActionF"] = TestActionDef(help_label="F: Child of B")
+    dummy_project.action_definitions["ActionG"] = TestActionDef(help_label="G: Third Root")
+    dummy_project.action_definitions["ActionH"] = TestActionDef(help_label="H: Child of G")
     
+    # Step 0: A
     s0_a = TestActionNode("ActionA")
-    step0 = TestStepDefinition(step_name="Step 0 Example", root_node_ids=[s0_a.node_id])
+    step0 = TestStepDefinition(step_name="Step 0: Action A", root_node_ids=[s0_a.node_id])
+
+    # Step 1: (C -> (D -> E, F_parallel_to_D)), G -> H
+    s1_c = TestActionNode("ActionC") # Root 1 of Step 1
+    s1_d = TestActionNode("ActionD", parent_node_id=s1_c.node_id)
+    s1_e = TestActionNode("ActionE", parent_node_id=s1_d.node_id)
+    s1_f = TestActionNode("ActionF", parent_node_id=s1_c.node_id) # F is parallel to D, under C
+    s1_c.children_node_ids = [s1_d.node_id, s1_f.node_id]
+    s1_d.children_node_ids = [s1_e.node_id]
+
+    s1_g = TestActionNode("ActionG") # Root 2 of Step 1
+    s1_h = TestActionNode("ActionH", parent_node_id=s1_g.node_id)
+    s1_g.children_node_ids = [s1_h.node_id]
     
-    s1_c_root = TestActionNode("ActionC")
-    s1_d_child_c = TestActionNode("ActionD", parent_node_id=s1_c_root.node_id)
-    s1_e_child_d = TestActionNode("ActionE", parent_node_id=s1_d_child_c.node_id)
-    s1_c_root.children_node_ids = [s1_d_child_c.node_id]
-    s1_d_child_c.children_node_ids = [s1_e_child_d.node_id]
-
-    s1_f_child_c_parallel = TestActionNode("ActionF", parent_node_id=s1_c_root.node_id) # F is also child of C
-    s1_c_root.children_node_ids.append(s1_f_child_c_parallel) # C now has D and F as children
-
-    s1_g_root = TestActionNode("ActionG")
-    s1_h_child_g = TestActionNode("ActionH", parent_node_id=s1_g_root.node_id)
-    s1_g_root.children_node_ids = [s1_h_child_g.node_id]
+    step1 = TestStepDefinition(step_name="Step 1: Complex", root_node_ids=[s1_c.node_id, s1_g.node_id])
     
-    step1 = TestStepDefinition(step_name="Step 1 Example", root_node_ids=[s1_c_root.node_id, s1_g_root.node_id]) # C and G are roots
-
-    all_nodes = [s0_a, s1_c_root, s1_d_child_c, s1_e_child_d, s1_f_child_c_parallel, s1_g_root, s1_h_child_g]
+    all_nodes = [s0_a, s1_c, s1_d, s1_e, s1_f, s1_g, s1_h]
     
     dummy_graph = TestSessionGraph(
-        session_name="Test Flow Grid Session",
+        session_name="Test PDF Layout",
         steps=[step0, step1],
         nodes=all_nodes
     )
@@ -444,17 +396,14 @@ if __name__ == '__main__':
     test_main_window = QMainWindow() 
     editor = SessionFlowEditorWidget(project_data_ref=dummy_project, parent=test_main_window)
     
-    # Connect the action_node_selected signal to a simple printer for testing
     def print_selected_node_details(node_obj):
-        if node_obj:
-            print(f"Details Panel Update Triggered for: {node_obj.action_label_to_execute} (ID: {node_obj.node_id})")
-        else:
-            print("Details Panel Cleared (No node selected)")
+        if node_obj: print(f"Details Panel Update for: {node_obj.action_label_to_execute}")
+        else: print("Details Panel Cleared")
     editor.action_node_selected.connect(print_selected_node_details)
     
     editor.load_session_graph(dummy_graph.session_name, dummy_graph)
     test_main_window.setCentralWidget(editor)
-    test_main_window.setWindowTitle("Test SessionFlow Editor (Grid V2)")
-    test_main_window.resize(900, 700)
+    test_main_window.setWindowTitle("Test SessionFlow Editor (Advanced Grid)")
+    test_main_window.resize(1000, 700)
     test_main_window.show()
     sys.exit(app.exec())

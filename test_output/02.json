@@ -1,0 +1,216 @@
+{
+  "projectMetadata": {
+    "projectName": "New SessionActions Project",
+    "formatVersion": "1.0.0",
+    "creationDate": "2025-05-15T11:08:36.890372+00:00",
+    "author": ""
+  },
+  "actionLabels": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I"
+  ],
+  "itemLabels": [
+    "ItemA",
+    "ItemB",
+    "ItemC"
+  ],
+  "subActionLabels": [
+    "SubactionA",
+    "SubactionB",
+    "SubactionC"
+  ],
+  "subActionDefinitions": {
+    "SubactionA": {
+      "description": "",
+      "needsTargetItem": false,
+      "fields": []
+    },
+    "SubactionB": {
+      "description": "",
+      "needsTargetItem": true,
+      "fields": []
+    },
+    "SubactionC": {
+      "description": "",
+      "needsTargetItem": true,
+      "fields": []
+    }
+  },
+  "actionDefinitions": {
+    "A": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "B": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "C": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "D": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "E": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "F": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "G": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "H": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "I": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    }
+  },
+  "sessionActions": [
+    {
+      "sessionName": "Session00",
+      "steps": [
+        {
+          "stepId": "55bca988-cb53-41d8-ba60-1c8aa555c796",
+          "stepName": "",
+          "rootNodeIds": [
+            "cfdb4b7b-1128-4ca5-b14f-08535283c77f"
+          ]
+        },
+        {
+          "stepId": "1aa6acc2-4998-4452-aae6-d3738bbe223d",
+          "stepName": "",
+          "rootNodeIds": [
+            "87e3959f-e5df-45e9-9132-80e662dec22d",
+            "1a183d78-11c1-4895-a495-a75723eff121",
+            "e0672337-393d-4d58-9981-cc96dbcbdf56"
+          ]
+        },
+        {
+          "stepId": "2067edce-c1ae-42ec-b21a-ffcfd311b232",
+          "stepName": "",
+          "rootNodeIds": [
+            "70b5ebfe-a0e1-4d80-b060-784af5d59929",
+            "b41abaa7-94c7-47e4-9046-e53da7e5729d",
+            "6ed70c1f-3cc0-4224-8dfc-9c44bc6832d9"
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "nodeId": "1a183d78-11c1-4895-a495-a75723eff121",
+          "actionLabelToExecute": "C",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "4341129a-006d-4956-9bc9-a28ef7760b6e",
+          "actionLabelToExecute": "I",
+          "childrenNodeIds": [],
+          "parentNodeId": "5b154219-ca66-439f-aabc-e99f84bb000d"
+        },
+        {
+          "nodeId": "5b154219-ca66-439f-aabc-e99f84bb000d",
+          "actionLabelToExecute": "E",
+          "childrenNodeIds": [
+            "4341129a-006d-4956-9bc9-a28ef7760b6e"
+          ],
+          "parentNodeId": "6ed70c1f-3cc0-4224-8dfc-9c44bc6832d9"
+        },
+        {
+          "nodeId": "6ed70c1f-3cc0-4224-8dfc-9c44bc6832d9",
+          "actionLabelToExecute": "G",
+          "childrenNodeIds": [
+            "a3f9be4b-33a7-4a71-88d5-f169d89c43cf",
+            "5b154219-ca66-439f-aabc-e99f84bb000d"
+          ]
+        },
+        {
+          "nodeId": "70b5ebfe-a0e1-4d80-b060-784af5d59929",
+          "actionLabelToExecute": "E",
+          "childrenNodeIds": [
+            "a043f22c-d8c1-46e0-81f4-489c7aa9a66f",
+            "ff4009e8-933d-4356-81d1-00baf91e5c2e"
+          ]
+        },
+        {
+          "nodeId": "87e3959f-e5df-45e9-9132-80e662dec22d",
+          "actionLabelToExecute": "B",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "a043f22c-d8c1-46e0-81f4-489c7aa9a66f",
+          "actionLabelToExecute": "H",
+          "childrenNodeIds": [
+            "e80adcab-e258-430a-8780-9f33e172ad10"
+          ],
+          "parentNodeId": "70b5ebfe-a0e1-4d80-b060-784af5d59929"
+        },
+        {
+          "nodeId": "a3f9be4b-33a7-4a71-88d5-f169d89c43cf",
+          "actionLabelToExecute": "E",
+          "childrenNodeIds": [
+            "cfc14e11-8955-4532-994e-80129b5c59b7"
+          ],
+          "parentNodeId": "6ed70c1f-3cc0-4224-8dfc-9c44bc6832d9"
+        },
+        {
+          "nodeId": "b41abaa7-94c7-47e4-9046-e53da7e5729d",
+          "actionLabelToExecute": "F",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "cfc14e11-8955-4532-994e-80129b5c59b7",
+          "actionLabelToExecute": "H",
+          "childrenNodeIds": [],
+          "parentNodeId": "a3f9be4b-33a7-4a71-88d5-f169d89c43cf"
+        },
+        {
+          "nodeId": "cfdb4b7b-1128-4ca5-b14f-08535283c77f",
+          "actionLabelToExecute": "A",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "e0672337-393d-4d58-9981-cc96dbcbdf56",
+          "actionLabelToExecute": "D",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "e80adcab-e258-430a-8780-9f33e172ad10",
+          "actionLabelToExecute": "I",
+          "childrenNodeIds": [],
+          "parentNodeId": "a043f22c-d8c1-46e0-81f4-489c7aa9a66f"
+        },
+        {
+          "nodeId": "ff4009e8-933d-4356-81d1-00baf91e5c2e",
+          "actionLabelToExecute": "A",
+          "childrenNodeIds": [],
+          "parentNodeId": "70b5ebfe-a0e1-4d80-b060-784af5d59929"
+        }
+      ]
+    }
+  ]
+}
