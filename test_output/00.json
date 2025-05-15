@@ -2,24 +2,234 @@
   "projectMetadata": {
     "projectName": "New SessionActions Project",
     "formatVersion": "1.0.0",
-    "creationDate": "2025-05-14T21:59:16.975103+00:00",
+    "creationDate": "2025-05-14T22:32:48.025070+00:00",
     "author": ""
   },
   "actionLabels": [
-    "ACTION_A",
-    "ACTION_B_01",
-    "ASD"
+    "ACIVATE TERMOMETER",
+    "ACTIVATE_DOOR",
+    "ACTIVATE_STETHOSCOPE"
   ],
   "itemLabels": [
     "ITEM_A",
     "ITEM_B"
   ],
   "subActionLabels": [
-    "SUBACTION_A",
-    "SUBACTION_B",
-    "SUBACTION_D"
+    "interactions",
+    "playAnimation"
   ],
-  "subActionDefinitions": {},
-  "actionDefinitions": {},
-  "sessionActions": []
+  "subActionDefinitions": {
+    "interactions": {
+      "description": "description description ",
+      "needsTargetItem": true,
+      "fields": [
+        {
+          "fieldName": "enable",
+          "fieldType": "boolean",
+          "defaultValue": true
+        }
+      ]
+    },
+    "playAnimation": {
+      "description": "play an animation file",
+      "needsTargetItem": true,
+      "fields": []
+    }
+  },
+  "actionDefinitions": {
+    "ACIVATE TERMOMETER": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "ACTIVATE_DOOR": {
+      "helpLabel": "help label tooltip",
+      "description": "description\t",
+      "subActions": [
+        {
+          "subActionLabelToUse": "interactions",
+          "propertyValues": {
+            "enable": false
+          },
+          "itemLabelForTarget": "ITEM_B"
+        },
+        {
+          "subActionLabelToUse": "interactions",
+          "propertyValues": {
+            "enable": true
+          },
+          "itemLabelForTarget": "ITEM_A"
+        }
+      ]
+    },
+    "ACTIVATE_STETHOSCOPE": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": [
+        {
+          "subActionLabelToUse": "playAnimation",
+          "propertyValues": {},
+          "itemLabelForTarget": "ITEM_A"
+        }
+      ]
+    }
+  },
+  "sessionActions": [
+    {
+      "sessionName": "Session_00",
+      "steps": [
+        {
+          "stepId": "6bb94784-e1f4-41f7-98b0-d8299b21ee60",
+          "stepName": "Step1Name",
+          "rootNodeIds": [
+            "bf73e058-c81c-4116-bdde-45d4400bd331"
+          ]
+        },
+        {
+          "stepId": "64675e75-d3dd-4f0f-9f3c-2215ae831e6d",
+          "stepName": "Step0Name",
+          "rootNodeIds": [
+            "455377f5-b497-4ede-a60c-1d469e011f3c",
+            "1314e648-13d0-47f4-b6d9-9af700254ed5",
+            "7d334b69-280c-4d91-bc8c-3fec9e40abb7"
+          ]
+        },
+        {
+          "stepId": "83de58d8-5e4a-43e6-bde0-0fe578740502",
+          "stepName": "",
+          "rootNodeIds": [
+            "112a1b85-88e0-40ef-9b4c-b479a16a1ab7",
+            "d4b50208-abd1-4eea-9f7d-8f3ecca2a41f"
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "nodeId": "1124d750-bcb2-4652-a448-b6163a06b10b",
+          "actionLabelToExecute": "ACTIVATE_STETHOSCOPE",
+          "childrenNodeIds": [],
+          "parentNodeId": "455377f5-b497-4ede-a60c-1d469e011f3c"
+        },
+        {
+          "nodeId": "112a1b85-88e0-40ef-9b4c-b479a16a1ab7",
+          "actionLabelToExecute": "ACIVATE TERMOMETER",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "1314e648-13d0-47f4-b6d9-9af700254ed5",
+          "actionLabelToExecute": "ACTIVATE_STETHOSCOPE",
+          "childrenNodeIds": [
+            "499efdf9-e54d-4aa6-b06a-5ad4bd1e822d"
+          ]
+        },
+        {
+          "nodeId": "3bfcc7a6-81f2-4dcd-aba9-10ad8ddc407f",
+          "actionLabelToExecute": "ACTIVATE_STETHOSCOPE",
+          "childrenNodeIds": [
+            "90069779-abf9-466b-888e-fc361ea3ab33"
+          ],
+          "parentNodeId": "455377f5-b497-4ede-a60c-1d469e011f3c"
+        },
+        {
+          "nodeId": "455377f5-b497-4ede-a60c-1d469e011f3c",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": [
+            "3bfcc7a6-81f2-4dcd-aba9-10ad8ddc407f",
+            "9b3a9996-8d99-4b93-ba04-030abba0a586",
+            "1124d750-bcb2-4652-a448-b6163a06b10b",
+            "dc4105c6-3cca-416d-a749-5a02009f3da3"
+          ]
+        },
+        {
+          "nodeId": "499efdf9-e54d-4aa6-b06a-5ad4bd1e822d",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": [],
+          "parentNodeId": "1314e648-13d0-47f4-b6d9-9af700254ed5"
+        },
+        {
+          "nodeId": "590f694d-0689-4741-8b60-be311e528ed7",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "7d334b69-280c-4d91-bc8c-3fec9e40abb7",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "84836056-a083-4a98-9750-5173266ba206",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "90069779-abf9-466b-888e-fc361ea3ab33",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": [],
+          "parentNodeId": "3bfcc7a6-81f2-4dcd-aba9-10ad8ddc407f"
+        },
+        {
+          "nodeId": "92533a73-8fe3-456e-b5ff-1727de4a11d0",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "94dd47de-7317-4eba-8480-ff3baaf23c08",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "9b3a9996-8d99-4b93-ba04-030abba0a586",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": [],
+          "parentNodeId": "455377f5-b497-4ede-a60c-1d469e011f3c"
+        },
+        {
+          "nodeId": "a65d356c-1a80-42cd-96d2-c8800d40d730",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "abf1afe0-a84d-433d-a862-3edb815a0da1",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "aff5840a-ea7a-4161-b18e-864e815293bd",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "bcc33762-5958-40c3-a48b-bd651277337c",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "bf73e058-c81c-4116-bdde-45d4400bd331",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "d4b50208-abd1-4eea-9f7d-8f3ecca2a41f",
+          "actionLabelToExecute": "ACIVATE TERMOMETER",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "dc4105c6-3cca-416d-a749-5a02009f3da3",
+          "actionLabelToExecute": "ACTIVATE_STETHOSCOPE",
+          "childrenNodeIds": [],
+          "parentNodeId": "455377f5-b497-4ede-a60c-1d469e011f3c"
+        },
+        {
+          "nodeId": "dc7e74ee-c945-4994-9599-86b29ab85f0e",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "e6256dea-7716-4b0b-ad31-26c8ffa402c9",
+          "actionLabelToExecute": "ACTIVATE_DOOR",
+          "childrenNodeIds": []
+        }
+      ]
+    }
+  ]
 }
