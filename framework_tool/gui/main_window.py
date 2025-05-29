@@ -6,11 +6,12 @@ import os
 from typing import Optional, List, Callable 
 
 from PySide6.QtWidgets import (
-    QMainWindow, QApplication, QWidget, QVBoxLayout, QLabel,
-    QFileDialog, QMessageBox, QDialog, QSplitter 
+    QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QFileDialog, QMessageBox, QDialog, QSplitter, QListWidget, QListWidgetItem,
+    QPushButton, QLineEdit, QInputDialog
 )
 from PySide6.QtGui import QAction, QKeySequence
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Qt, Slot, QSettings
 
 from ..project_io import json_handler
 from ..data_models.project_data import ProjectData
@@ -19,9 +20,9 @@ from ..data_models.project_data import ProjectData
 # from ..data_models.session_graph import SessionActionsGraph # Not directly used here
 
 from .widgets.label_editor_widget import LabelEditorWidget
-from .dialogs.manage_sub_action_definitions_dialog import ManageSubActionDefinitionsDialog
-from .dialogs.manage_action_definitions_dialog import ManageActionDefinitionsDialog
-from .dialogs.manage_session_actions_dialog import ManageSessionActionsDialog
+from .widgets.session_flow_editor_widget import SessionFlowEditorWidget
+from .widgets.action_definition_editor_widget import ActionDefinitionEditorWidget
+from .widgets.sub_action_definition_editor_widget import SubActionDefinitionEditorWidget
 
 
 class MainWindow(QMainWindow):
@@ -33,18 +34,16 @@ class MainWindow(QMainWindow):
         self.current_project_data: Optional[ProjectData] = None
         self.current_project_filepath: Optional[str] = None
         self.is_dirty: bool = False
+        self.settings = QSettings()
         self._init_ui()
         self.new_project()
 
     def _init_ui(self):
         self.setWindowTitle("SessionActions Framework Tool")
-        self.setGeometry(100, 100, 1200, 800)
+        self.setGeometry(100, 100, 1600, 900)
 
         central_widget = QWidget(self)
-        self.main_layout = QVBoxLayout(central_widget) 
-        self.placeholder_label = QLabel("Welcome! Open or create a project.\nUse 'Manage' menu to edit definitions and session flows.", self)
-        self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.main_layout.addWidget(self.placeholder_label)
+        self.main_layout = QVBoxLayout(central_widget)
         self.setCentralWidget(central_widget)
 
         menu_bar = self.menuBar()
@@ -57,33 +56,195 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         exit_action = QAction("E&xit", self); exit_action.setShortcut(QKeySequence.StandardKey.Quit); exit_action.triggered.connect(self.close); file_menu.addAction(exit_action)
 
-        manage_menu = menu_bar.addMenu("&Manage")
-        
-        # "Edit ItemLabels..." is kept as ItemLabels are simple strings
-        edit_item_labels_action = QAction("Edit &ItemLabels...", self)
-        edit_item_labels_action.triggered.connect(self.edit_item_labels)
-        manage_menu.addAction(edit_item_labels_action)
-        
-        manage_menu.addSeparator() 
-        
-        # "Edit ActionLabels" and "Edit SubActionLabels" are removed.
-        # These labels will be managed directly within their respective definition dialogs.
-
-        edit_subaction_defs_action = QAction("Edit SubAction &Definitions...", self)
-        edit_subaction_defs_action.triggered.connect(self.edit_sub_action_definitions)
-        manage_menu.addAction(edit_subaction_defs_action)
-        
-        # manage_menu.addSeparator() # Separator can be removed if next item is related
-        edit_action_defs_action = QAction("Edit Action De&finitions...", self)
-        edit_action_defs_action.triggered.connect(self.edit_action_definitions) 
-        manage_menu.addAction(edit_action_defs_action)
-        
-        manage_menu.addSeparator()
-        edit_session_flows_action = QAction("Edit Session &Flows...", self) 
-        edit_session_flows_action.triggered.connect(self.edit_session_graphs) 
-        manage_menu.addAction(edit_session_flows_action)
-
+        self._create_unified_interface()
+        self._restore_layout()  # Restore layout after widgets are created
         self.statusBar().showMessage("Ready")
+
+    def _create_unified_interface(self):
+        """Create the unified 5-panel interface"""
+        self.main_splitter = QSplitter(Qt.Orientation.Horizontal, self)
+        
+        # 1. Session switcher (1 column)
+        self._create_session_switcher_panel(self.main_splitter)
+        
+        # 2. Actions (2 columns) 
+        self._create_actions_panel(self.main_splitter)
+        
+        # 3. Session Flow (1 column)
+        self._create_session_flow_panel(self.main_splitter)
+        
+        # 4. SubActions (2 columns)
+        self._create_subactions_panel(self.main_splitter)
+        
+        # 5. Item labels (1 column)
+        self._create_item_labels_panel(self.main_splitter)
+        
+        # Set initial splitter sizes: [Session, Actions, Flow, SubActions, Items]
+        self.main_splitter.setSizes([200, 500, 400, 500, 200])
+        self.main_layout.addWidget(self.main_splitter)
+
+    def _create_session_switcher_panel(self, parent_splitter):
+        """Create Session switcher panel"""
+        panel = QWidget(self)
+        layout = QVBoxLayout(panel)
+        layout.addWidget(QLabel("Session switcher", self))
+        
+        self.session_names_list_widget = QListWidget(self)
+        self.session_names_list_widget.currentItemChanged.connect(self._on_selected_session_name_changed)
+        layout.addWidget(self.session_names_list_widget)
+
+        sessions_buttons_layout = QVBoxLayout()
+        add_session_button = QPushButton("Add New Session...", self)
+        add_session_button.clicked.connect(self._add_new_session)
+        sessions_buttons_layout.addWidget(add_session_button)
+        remove_session_button = QPushButton("Remove Selected", self)
+        remove_session_button.clicked.connect(self._remove_selected_session)
+        sessions_buttons_layout.addWidget(remove_session_button)
+        layout.addLayout(sessions_buttons_layout)
+        
+        parent_splitter.addWidget(panel)
+
+    def _create_actions_panel(self, parent_splitter):
+        """Create Actions panel (2 columns)"""
+        self.actions_splitter = QSplitter(Qt.Orientation.Horizontal, self)
+        
+        # Left: Actions list
+        left_panel = QWidget(self)
+        left_layout = QVBoxLayout(left_panel)
+        left_layout.addWidget(QLabel("Actions", self))
+        
+        # Filter input
+        filter_layout = QHBoxLayout()
+        filter_layout.addWidget(QLabel("Filter:", self))
+        self.actions_filter_input = QLineEdit(self)
+        self.actions_filter_input.setPlaceholderText("Filter Action labels...")
+        self.actions_filter_input.textChanged.connect(self._apply_actions_filter)
+        filter_layout.addWidget(self.actions_filter_input)
+        left_layout.addLayout(filter_layout)
+        
+        self.action_labels_list_widget = QListWidget(self)
+        self.action_labels_list_widget.currentItemChanged.connect(self._on_selected_action_label_changed)
+        left_layout.addWidget(self.action_labels_list_widget)
+
+        actions_buttons_layout = QVBoxLayout()
+        add_action_button = QPushButton("Add New ActionLabel...", self)
+        add_action_button.clicked.connect(self._add_new_action_label)
+        actions_buttons_layout.addWidget(add_action_button)
+        remove_action_button = QPushButton("Remove Selected ActionLabel", self)
+        remove_action_button.clicked.connect(self._remove_selected_action_label)
+        actions_buttons_layout.addWidget(remove_action_button)
+        left_layout.addLayout(actions_buttons_layout)
+        
+        self.actions_splitter.addWidget(left_panel)
+
+        # Right: Actions editor 
+        self.action_editor_widget = ActionDefinitionEditorWidget(project_data_ref=None, parent=self)
+        self.action_editor_widget.action_definition_changed.connect(self._on_action_definition_changed)
+        self.actions_splitter.addWidget(self.action_editor_widget)
+        
+        self.actions_splitter.setSizes([300, 600])
+        parent_splitter.addWidget(self.actions_splitter)
+
+    def _create_session_flow_panel(self, parent_splitter):
+        """Create Session Flow panel"""
+        panel = QWidget(self)
+        layout = QVBoxLayout(panel)
+        layout.addWidget(QLabel("Session Flow", self))
+        
+        self.session_flow_editor_widget = SessionFlowEditorWidget(project_data_ref=None, parent=self)
+        self.session_flow_editor_widget.session_graph_changed.connect(self._on_session_flow_changed)
+        self.session_flow_editor_widget.action_node_selected.connect(self._on_action_node_selected_in_flow)
+        layout.addWidget(self.session_flow_editor_widget)
+        
+        parent_splitter.addWidget(panel)
+
+    def _create_subactions_panel(self, parent_splitter):
+        """Create SubActions panel (2 columns)"""
+        self.subactions_splitter = QSplitter(Qt.Orientation.Horizontal, self)
+        
+        # Left: SubActions list
+        left_panel = QWidget(self)
+        left_layout = QVBoxLayout(left_panel)
+        left_layout.addWidget(QLabel("Subactions", self))
+        
+        # Filter input
+        filter_layout = QHBoxLayout()
+        filter_layout.addWidget(QLabel("Filter:", self))
+        self.subactions_filter_input = QLineEdit(self)
+        self.subactions_filter_input.setPlaceholderText("Filter SubAction labels...")
+        self.subactions_filter_input.textChanged.connect(self._apply_subactions_filter)
+        filter_layout.addWidget(self.subactions_filter_input)
+        left_layout.addLayout(filter_layout)
+        
+        self.sub_action_labels_list_widget = QListWidget(self)
+        self.sub_action_labels_list_widget.currentItemChanged.connect(self._on_selected_sub_action_label_changed)
+        left_layout.addWidget(self.sub_action_labels_list_widget)
+
+        subactions_buttons_layout = QVBoxLayout()
+        add_subaction_button = QPushButton("Add New SubActionLabel...", self)
+        add_subaction_button.clicked.connect(self._add_new_sub_action_label)
+        subactions_buttons_layout.addWidget(add_subaction_button)
+        remove_subaction_button = QPushButton("Remove Selected SubActionLabel", self)
+        remove_subaction_button.clicked.connect(self._remove_selected_sub_action_label)
+        subactions_buttons_layout.addWidget(remove_subaction_button)
+        left_layout.addLayout(subactions_buttons_layout)
+        
+        self.subactions_splitter.addWidget(left_panel)
+
+        # Right: SubActions editor 
+        self.sub_action_editor_widget = SubActionDefinitionEditorWidget(parent=self)
+        self.sub_action_editor_widget.definition_changed.connect(self._on_sub_action_definition_changed)
+        self.subactions_splitter.addWidget(self.sub_action_editor_widget)
+        
+        self.subactions_splitter.setSizes([250, 550])
+        parent_splitter.addWidget(self.subactions_splitter)
+
+    def _create_item_labels_panel(self, parent_splitter):
+        """Create Item labels panel"""
+        panel = QWidget(self)
+        layout = QVBoxLayout(panel)
+        layout.addWidget(QLabel("Item labels", self))
+        
+        self.item_labels_editor_widget = LabelEditorWidget(
+            widget_title="Item labels",
+            get_labels_func=lambda: self.current_project_data.item_labels if self.current_project_data else [],
+            set_labels_func=lambda lst: setattr(self.current_project_data, 'item_labels', lst) if self.current_project_data else None,
+            parent=self
+        )
+        self.item_labels_editor_widget.labels_changed.connect(lambda: self.mark_dirty(True))
+        layout.addWidget(self.item_labels_editor_widget)
+        
+        parent_splitter.addWidget(panel)
+
+    def _save_layout(self):
+        """Save current layout to QSettings"""
+        # Save window geometry
+        self.settings.setValue("geometry", self.saveGeometry())
+        
+        # Save splitter states
+        self.settings.setValue("main_splitter", self.main_splitter.saveState())
+        self.settings.setValue("actions_splitter", self.actions_splitter.saveState())
+        self.settings.setValue("subactions_splitter", self.subactions_splitter.saveState())
+
+    def _restore_layout(self):
+        """Restore layout from QSettings"""
+        # Restore window geometry
+        geometry = self.settings.value("geometry")
+        if geometry:
+            self.restoreGeometry(geometry)
+        
+        # Restore splitter states (after widgets are created)
+        main_splitter_state = self.settings.value("main_splitter")
+        if main_splitter_state and hasattr(self, 'main_splitter'):
+            self.main_splitter.restoreState(main_splitter_state)
+        
+        actions_splitter_state = self.settings.value("actions_splitter") 
+        if actions_splitter_state and hasattr(self, 'actions_splitter'):
+            self.actions_splitter.restoreState(actions_splitter_state)
+            
+        subactions_splitter_state = self.settings.value("subactions_splitter")
+        if subactions_splitter_state and hasattr(self, 'subactions_splitter'):
+            self.subactions_splitter.restoreState(subactions_splitter_state)
 
     def _update_window_title(self):
         base_title = "SessionActions Framework Tool"
@@ -118,8 +279,7 @@ class MainWindow(QMainWindow):
         self.current_project_filepath = None
         self.mark_dirty(False)
         self._update_window_title()
-        if self.current_project_data: self.placeholder_label.setText(f"New Project: {self.current_project_data.project_metadata.project_name}\nUse 'Manage' menu to edit definitions and session flows.")
-        else: self.placeholder_label.setText("Error: Could not initialize new project data.")
+        self._refresh_all_panels()
         print("New project initialized.")
 
     @Slot()
@@ -134,8 +294,7 @@ class MainWindow(QMainWindow):
                 self.mark_dirty(False) 
                 self._update_window_title()
                 self.statusBar().showMessage(f"Project '{os.path.basename(filepath)}' loaded.", 5000)
-                if self.current_project_data: self.placeholder_label.setText(f"Loaded Project: {self.current_project_data.project_metadata.project_name}\nUse 'Manage' menu to edit definitions and session flows.")
-                else: self.placeholder_label.setText(f"Error: Could not load project data from {filepath}")
+                self._refresh_all_panels()
                 print(f"Project loaded from: {filepath}")
             except Exception as e:
                 QMessageBox.critical(self, "Error Loading Project", f"Could not load project file:\n{filepath}\n\nError: {e}")
@@ -171,69 +330,297 @@ class MainWindow(QMainWindow):
             return self.save_project_action() 
         return False
 
-    # edit_action_labels and edit_subaction_labels are removed.
-    # The LabelEditorWidget is now only used for ItemLabels.
-    @Slot()
-    def edit_item_labels(self):
-        if self.current_project_data: 
-            self._open_label_editor_dialog(
-                title="Edit ItemLabels", 
-                getter=lambda: self.current_project_data.item_labels, 
-                setter=lambda lst: setattr(self.current_project_data, 'item_labels', lst)
-            )
+    def _refresh_all_panels(self):
+        """Refresh all panels when project data changes"""
+        self._refresh_session_switcher()
+        self._refresh_actions_panel()
+        self._refresh_session_flow()
+        self._refresh_subactions_panel()
+        self._refresh_item_labels()
 
-    def _open_label_editor_dialog(self, title: str, getter: Callable[[], List[str]], setter: Callable[[List[str]], None]):
-        # This function is now only for ItemLabels
+    def _refresh_session_switcher(self):
+        """Refresh session switcher list"""
         if not self.current_project_data:
-            QMessageBox.information(self, "No Project", "Please open or create a project first.")
+            self.session_names_list_widget.clear()
             return
-        dialog = QDialog(self); dialog.setWindowTitle(title); dialog.setMinimumWidth(400); dialog.setMinimumHeight(300)
-        layout = QVBoxLayout(dialog)
-        # LabelEditorWidget is still used here for ItemLabels
-        editor_widget = LabelEditorWidget(
-            widget_title=title, # Pass title to widget if it uses it
-            get_labels_func=getter, 
-            set_labels_func=setter, 
-            parent=dialog
-        )
-        editor_widget.labels_changed.connect(lambda: self.mark_dirty(True))
-        layout.addWidget(editor_widget); dialog.setLayout(layout); dialog.exec()
+            
+        self.session_names_list_widget.blockSignals(True)
+        self.session_names_list_widget.clear()
+        sorted_sessions = sorted(self.current_project_data.session_actions, key=lambda s: s.session_name)
+        for session_graph in sorted_sessions:
+            self.session_names_list_widget.addItem(QListWidgetItem(session_graph.session_name))
+        self.session_names_list_widget.blockSignals(False)
 
+        if self.session_names_list_widget.count() > 0:
+            self.session_names_list_widget.setCurrentRow(0)
+        else:
+            self.session_flow_editor_widget.load_session_graph("", None)
 
-    @Slot()
-    def edit_sub_action_definitions(self):
+    def _refresh_actions_panel(self):
+        """Refresh actions list and filter"""
+        # Update project data reference
+        if hasattr(self, 'action_editor_widget'):
+            self.action_editor_widget.project_data_ref = self.current_project_data
+            
         if not self.current_project_data:
-            QMessageBox.information(self, "No Project", "Please open or create a project first.")
+            self.action_labels_list_widget.clear()
+            self.action_editor_widget.load_action_definition("", None)
             return
-        dialog = ManageSubActionDefinitionsDialog(self.current_project_data, self)
-        dialog.project_data_changed.connect(lambda: self.mark_dirty(True))
-        dialog.exec()
+            
+        self._load_action_labels_list()
+        self._apply_actions_filter()
 
-    @Slot()
-    def edit_action_definitions(self):
-        if not self.current_project_data:
-            QMessageBox.information(self, "No Project", "Please open or create a project first.")
-            return
-        dialog = ManageActionDefinitionsDialog(self.current_project_data, self)
-        dialog.project_data_changed.connect(lambda: self.mark_dirty(True))
-        dialog.exec()
+    def _refresh_session_flow(self):
+        """Refresh session flow editor"""
+        if hasattr(self, 'session_flow_editor_widget'):
+            # Update project data reference
+            self.session_flow_editor_widget.project_data_ref = self.current_project_data
 
-    @Slot()
-    def edit_session_graphs(self): 
+    def _refresh_subactions_panel(self):
+        """Refresh subactions list and filter"""
         if not self.current_project_data:
-            QMessageBox.information(self, "No Project", "Please open or create a project first.")
+            self.sub_action_labels_list_widget.clear()
+            self.sub_action_editor_widget.load_sub_action_definition("", None)
             return
-        if not self.current_project_data.action_definitions:
-            QMessageBox.warning(self, "No Action Definitions", 
-                                "Please define some Actions in 'Manage -> Edit Action Definitions' before creating Session Flows.")
+            
+        self._load_sub_action_labels_list()
+        self._apply_subactions_filter()
+
+    def _refresh_item_labels(self):
+        """Refresh item labels editor"""
+        if hasattr(self, 'item_labels_editor_widget'):
+            self.item_labels_editor_widget.load_labels()
+
+    # Session switcher handlers
+    def _on_selected_session_name_changed(self, current, previous):
+        """Handle session selection change"""
+        if not current or not self.current_project_data:
+            self.session_flow_editor_widget.load_session_graph("", None)
             return
-        dialog = ManageSessionActionsDialog(self.current_project_data, self)
-        dialog.project_data_changed.connect(lambda: self.mark_dirty(True))
-        dialog.exec()
+        
+        session_name = current.text()
+        session_graph = next((s for s in self.current_project_data.session_actions if s.session_name == session_name), None)
+        self.session_flow_editor_widget.load_session_graph(session_name, session_graph)
+
+    def _add_new_session(self):
+        """Add new session"""
+        from ...data_models.session_graph import SessionActionsGraph
+        
+        if not self.current_project_data:
+            return
+            
+        session_name, ok = QInputDialog.getText(self, "Add New Session", "Enter session name:")
+        if ok and session_name.strip():
+            session_name = session_name.strip()
+            if any(s.session_name == session_name for s in self.current_project_data.session_actions):
+                QMessageBox.warning(self, "Duplicate Name", f"A session with the name '{session_name}' already exists.")
+                return
+            
+            new_session = SessionActionsGraph(session_name=session_name)
+            self.current_project_data.session_actions.append(new_session)
+            self._refresh_session_switcher()
+            self.mark_dirty(True)
+
+    def _remove_selected_session(self):
+        """Remove selected session"""
+        current = self.session_names_list_widget.currentItem()
+        if not current or not self.current_project_data:
+            return
+            
+        session_name = current.text()
+        reply = QMessageBox.question(self, "Remove Session", 
+                                   f"Are you sure you want to remove the session '{session_name}'?",
+                                   QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
+            self.current_project_data.session_actions = [s for s in self.current_project_data.session_actions if s.session_name != session_name]
+            self._refresh_session_switcher()
+            self.mark_dirty(True)
+
+    # Actions panel handlers
+    def _load_action_labels_list(self):
+        """Load action labels into list widget"""
+        if not self.current_project_data:
+            return
+            
+        self.action_labels_list_widget.blockSignals(True)
+        current_selected_text = None
+        if self.action_labels_list_widget.currentItem():
+            current_selected_text = self.action_labels_list_widget.currentItem().text()
+        
+        self.action_labels_list_widget.clear()
+        for action_label in sorted(set(self.current_project_data.action_labels)):
+            self.action_labels_list_widget.addItem(QListWidgetItem(action_label))
+        
+        self.action_labels_list_widget.blockSignals(False)
+        
+        # Restore selection
+        if current_selected_text:
+            for i in range(self.action_labels_list_widget.count()):
+                if self.action_labels_list_widget.item(i).text() == current_selected_text:
+                    self.action_labels_list_widget.setCurrentRow(i)
+                    break
+
+    def _apply_actions_filter(self):
+        """Apply filter to actions list"""
+        filter_text = self.actions_filter_input.text().lower()
+        for i in range(self.action_labels_list_widget.count()):
+            item = self.action_labels_list_widget.item(i)
+            item.setHidden(filter_text not in item.text().lower())
+
+    def _on_selected_action_label_changed(self, current, previous):
+        """Handle action selection change"""
+        if not current or not self.current_project_data:
+            self.action_editor_widget.load_action_definition("", None)
+            return
+        
+        action_label = current.text()
+        action_def = self.current_project_data.action_definitions.get(action_label)
+        self.action_editor_widget.load_action_definition(action_label, action_def)
+
+    def _add_new_action_label(self):
+        """Add new action label"""
+        if not self.current_project_data:
+            return
+            
+        action_label, ok = QInputDialog.getText(self, "Add New Action Label", "Enter action label:")
+        if ok and action_label.strip():
+            action_label = action_label.strip()
+            if action_label in self.current_project_data.action_labels:
+                QMessageBox.warning(self, "Duplicate Label", f"Action label '{action_label}' already exists.")
+                return
+            
+            from ...data_models.action_definition import ActionDefinition
+            self.current_project_data.action_labels.append(action_label)
+            self.current_project_data.action_definitions[action_label] = ActionDefinition()
+            self._refresh_actions_panel()
+            self.mark_dirty(True)
+
+    def _remove_selected_action_label(self):
+        """Remove selected action label"""
+        current = self.action_labels_list_widget.currentItem()
+        if not current or not self.current_project_data:
+            return
+            
+        action_label = current.text()
+        reply = QMessageBox.question(self, "Remove Action Label", 
+                                   f"Are you sure you want to remove the action label '{action_label}'?",
+                                   QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
+            self.current_project_data.action_labels = [al for al in self.current_project_data.action_labels if al != action_label]
+            if action_label in self.current_project_data.action_definitions:
+                del self.current_project_data.action_definitions[action_label]
+            self._refresh_actions_panel()
+            self.mark_dirty(True)
+
+    def _on_action_definition_changed(self):
+        """Handle action definition changes"""
+        self.mark_dirty(True)
+
+    # Session flow handlers
+    def _on_session_flow_changed(self):
+        """Handle session flow changes"""
+        self.mark_dirty(True)
+
+    def _on_action_node_selected_in_flow(self, action_node):
+        """Handle action node selection in flow - sync with actions panel"""
+        if not action_node or not self.current_project_data:
+            return
+            
+        action_label = action_node.action_label_to_execute
+        # Find and select the corresponding action in the actions list
+        for i in range(self.action_labels_list_widget.count()):
+            item = self.action_labels_list_widget.item(i)
+            if item.text() == action_label and not item.isHidden():
+                self.action_labels_list_widget.setCurrentRow(i)
+                break
+
+    # SubActions panel handlers
+    def _load_sub_action_labels_list(self):
+        """Load sub action labels into list widget"""
+        if not self.current_project_data:
+            return
+            
+        self.sub_action_labels_list_widget.blockSignals(True)
+        current_selected_text = None
+        if self.sub_action_labels_list_widget.currentItem():
+            current_selected_text = self.sub_action_labels_list_widget.currentItem().text()
+        
+        self.sub_action_labels_list_widget.clear()
+        for sub_action_label in sorted(set(self.current_project_data.sub_action_labels)):
+            self.sub_action_labels_list_widget.addItem(QListWidgetItem(sub_action_label))
+        
+        self.sub_action_labels_list_widget.blockSignals(False)
+        
+        # Restore selection
+        if current_selected_text:
+            for i in range(self.sub_action_labels_list_widget.count()):
+                if self.sub_action_labels_list_widget.item(i).text() == current_selected_text:
+                    self.sub_action_labels_list_widget.setCurrentRow(i)
+                    break
+
+    def _apply_subactions_filter(self):
+        """Apply filter to subactions list"""
+        filter_text = self.subactions_filter_input.text().lower()
+        for i in range(self.sub_action_labels_list_widget.count()):
+            item = self.sub_action_labels_list_widget.item(i)
+            item.setHidden(filter_text not in item.text().lower())
+
+    def _on_selected_sub_action_label_changed(self, current, previous):
+        """Handle sub action selection change"""
+        if not current or not self.current_project_data:
+            self.sub_action_editor_widget.load_sub_action_definition("", None)
+            return
+        
+        sub_action_label = current.text()
+        sub_action_def = self.current_project_data.sub_action_definitions.get(sub_action_label)
+        self.sub_action_editor_widget.load_sub_action_definition(sub_action_label, sub_action_def)
+
+    def _add_new_sub_action_label(self):
+        """Add new sub action label"""
+        if not self.current_project_data:
+            return
+            
+        sub_action_label, ok = QInputDialog.getText(self, "Add New SubAction Label", "Enter sub action label:")
+        if ok and sub_action_label.strip():
+            sub_action_label = sub_action_label.strip()
+            if sub_action_label in self.current_project_data.sub_action_labels:
+                QMessageBox.warning(self, "Duplicate Label", f"SubAction label '{sub_action_label}' already exists.")
+                return
+            
+            from ...data_models.sub_action_definition import SubActionDefinition
+            self.current_project_data.sub_action_labels.append(sub_action_label)
+            self.current_project_data.sub_action_definitions[sub_action_label] = SubActionDefinition()
+            self._refresh_subactions_panel()
+            self.mark_dirty(True)
+
+    def _remove_selected_sub_action_label(self):
+        """Remove selected sub action label"""
+        current = self.sub_action_labels_list_widget.currentItem()
+        if not current or not self.current_project_data:
+            return
+            
+        sub_action_label = current.text()
+        reply = QMessageBox.question(self, "Remove SubAction Label", 
+                                   f"Are you sure you want to remove the sub action label '{sub_action_label}'?",
+                                   QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
+            self.current_project_data.sub_action_labels = [sal for sal in self.current_project_data.sub_action_labels if sal != sub_action_label]
+            if sub_action_label in self.current_project_data.sub_action_definitions:
+                del self.current_project_data.sub_action_definitions[sub_action_label]
+            self._refresh_subactions_panel()
+            self.mark_dirty(True)
+
+    def _on_sub_action_definition_changed(self):
+        """Handle sub action definition changes"""
+        self.mark_dirty(True)
 
     def closeEvent(self, event):
-        if self._check_unsaved_changes(): event.accept(); print("Application closing.")
-        else: event.ignore()
+        if self._check_unsaved_changes(): 
+            self._save_layout()  # Save layout before closing
+            event.accept(); 
+            print("Application closing.")
+        else: 
+            event.ignore()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

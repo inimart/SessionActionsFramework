@@ -61,6 +61,9 @@ class ActionCardWidget(QFrame):
         
         layout.addWidget(self.action_label_widget)
         self.setLayout(layout)
+        
+        # Set tooltip with NodeID
+        self.setToolTip(f"Node ID: {self.action_node.node_id}")
 
     def _apply_style(self):
         """Applies styling, including background color and selection highlight using stylesheets."""

@@ -67,27 +67,31 @@ class ActionDefinitionEditorWidget(QWidget):
         csa_buttons_layout = QHBoxLayout(self.csa_buttons_widget)
         csa_buttons_layout.setContentsMargins(0,0,0,0)
 
+        # Left column: Add, Edit, Remove in vertical
+        left_buttons_layout = QVBoxLayout()
         add_csa_button = QPushButton("Add SubAction...", self)
         add_csa_button.clicked.connect(self._add_configured_sub_action)
-        csa_buttons_layout.addWidget(add_csa_button)
+        left_buttons_layout.addWidget(add_csa_button)
 
         edit_csa_button = QPushButton("Edit Selected...", self)
         edit_csa_button.clicked.connect(self._edit_selected_configured_sub_action)
-        csa_buttons_layout.addWidget(edit_csa_button)
+        left_buttons_layout.addWidget(edit_csa_button)
 
         remove_csa_button = QPushButton("Remove Selected", self)
         remove_csa_button.clicked.connect(self._remove_selected_configured_sub_action)
-        csa_buttons_layout.addWidget(remove_csa_button)
-        
-        csa_buttons_layout.addSpacing(20) 
+        left_buttons_layout.addWidget(remove_csa_button)
+        csa_buttons_layout.addLayout(left_buttons_layout)
 
+        # Right column: Move Up, Move Down in vertical
+        right_buttons_layout = QVBoxLayout()
         move_up_button = QPushButton("Move Up", self)
         move_up_button.clicked.connect(self._move_selected_csa_up)
-        csa_buttons_layout.addWidget(move_up_button)
+        right_buttons_layout.addWidget(move_up_button)
 
         move_down_button = QPushButton("Move Down", self)
         move_down_button.clicked.connect(self._move_selected_csa_down)
-        csa_buttons_layout.addWidget(move_down_button)
+        right_buttons_layout.addWidget(move_down_button)
+        csa_buttons_layout.addLayout(right_buttons_layout)
 
         csa_buttons_layout.addStretch()
         main_layout.addWidget(self.csa_buttons_widget)

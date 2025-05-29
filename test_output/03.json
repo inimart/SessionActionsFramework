@@ -1,0 +1,312 @@
+{
+  "projectMetadata": {
+    "projectName": "New SessionActions Project",
+    "formatVersion": "1.0.0",
+    "creationDate": "2025-05-15T11:08:36.890372+00:00",
+    "author": ""
+  },
+  "actionLabels": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "Z"
+  ],
+  "itemLabels": [
+    "ItemA",
+    "ItemB",
+    "ItemC"
+  ],
+  "subActionLabels": [
+    "SubactionA",
+    "SubactionB",
+    "SubactionC"
+  ],
+  "subActionDefinitions": {
+    "SubactionA": {
+      "description": "",
+      "needsTargetItem": false,
+      "fields": []
+    },
+    "SubactionB": {
+      "description": "",
+      "needsTargetItem": true,
+      "fields": [
+        {
+          "fieldName": "enabled",
+          "fieldType": "boolean",
+          "defaultValue": false
+        }
+      ]
+    },
+    "SubactionC": {
+      "description": "",
+      "needsTargetItem": true,
+      "fields": []
+    }
+  },
+  "actionDefinitions": {
+    "A": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": [
+        {
+          "subActionLabelToUse": "SubactionA",
+          "propertyValues": {}
+        }
+      ]
+    },
+    "B": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": [
+        {
+          "subActionLabelToUse": "SubactionB",
+          "propertyValues": {
+            "enabled": true
+          },
+          "itemLabelForTarget": "ItemB"
+        },
+        {
+          "subActionLabelToUse": "SubactionC",
+          "propertyValues": {},
+          "itemLabelForTarget": "ItemB"
+        }
+      ]
+    },
+    "C": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "D": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "E": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "F": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "G": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "H": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "I": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "L": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "M": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "N": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "O": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "P": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "Q": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "R": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "S": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "T": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "U": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "V": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    },
+    "Z": {
+      "helpLabel": "",
+      "description": "",
+      "subActions": []
+    }
+  },
+  "sessionActions": [
+    {
+      "sessionName": "Session00",
+      "steps": [
+        {
+          "stepId": "55bca988-cb53-41d8-ba60-1c8aa555c796",
+          "stepName": "",
+          "rootNodeIds": [
+            "cfdb4b7b-1128-4ca5-b14f-08535283c77f"
+          ]
+        },
+        {
+          "stepId": "1aa6acc2-4998-4452-aae6-d3738bbe223d",
+          "stepName": "",
+          "rootNodeIds": [
+            "87e3959f-e5df-45e9-9132-80e662dec22d",
+            "1a183d78-11c1-4895-a495-a75723eff121",
+            "e0672337-393d-4d58-9981-cc96dbcbdf56"
+          ]
+        },
+        {
+          "stepId": "2067edce-c1ae-42ec-b21a-ffcfd311b232",
+          "stepName": "",
+          "rootNodeIds": [
+            "70b5ebfe-a0e1-4d80-b060-784af5d59929",
+            "b41abaa7-94c7-47e4-9046-e53da7e5729d",
+            "6ed70c1f-3cc0-4224-8dfc-9c44bc6832d9"
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "nodeId": "1a183d78-11c1-4895-a495-a75723eff121",
+          "actionLabelToExecute": "C",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "2aebb87a-2e48-4c10-ba12-20521d151938",
+          "actionLabelToExecute": "N",
+          "childrenNodeIds": [
+            "bdcb2902-c06e-4948-aea4-de043872ee10"
+          ],
+          "parentNodeId": "6ed70c1f-3cc0-4224-8dfc-9c44bc6832d9"
+        },
+        {
+          "nodeId": "6ed70c1f-3cc0-4224-8dfc-9c44bc6832d9",
+          "actionLabelToExecute": "G",
+          "childrenNodeIds": [
+            "d93c8af9-62f2-496c-a88a-89b618965450",
+            "2aebb87a-2e48-4c10-ba12-20521d151938"
+          ]
+        },
+        {
+          "nodeId": "70b5ebfe-a0e1-4d80-b060-784af5d59929",
+          "actionLabelToExecute": "E",
+          "childrenNodeIds": [
+            "a043f22c-d8c1-46e0-81f4-489c7aa9a66f",
+            "e3a879bd-113b-49a0-a3a1-76b8cfe1643e"
+          ]
+        },
+        {
+          "nodeId": "87e3959f-e5df-45e9-9132-80e662dec22d",
+          "actionLabelToExecute": "B",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "a043f22c-d8c1-46e0-81f4-489c7aa9a66f",
+          "actionLabelToExecute": "H",
+          "childrenNodeIds": [
+            "e80adcab-e258-430a-8780-9f33e172ad10"
+          ],
+          "parentNodeId": "70b5ebfe-a0e1-4d80-b060-784af5d59929"
+        },
+        {
+          "nodeId": "b41abaa7-94c7-47e4-9046-e53da7e5729d",
+          "actionLabelToExecute": "F",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "bdcb2902-c06e-4948-aea4-de043872ee10",
+          "actionLabelToExecute": "P",
+          "childrenNodeIds": [],
+          "parentNodeId": "2aebb87a-2e48-4c10-ba12-20521d151938"
+        },
+        {
+          "nodeId": "cfdb4b7b-1128-4ca5-b14f-08535283c77f",
+          "actionLabelToExecute": "A",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "d93c8af9-62f2-496c-a88a-89b618965450",
+          "actionLabelToExecute": "M",
+          "childrenNodeIds": [
+            "ee373b0b-3249-45fc-aa98-8f925ed02d34"
+          ],
+          "parentNodeId": "6ed70c1f-3cc0-4224-8dfc-9c44bc6832d9"
+        },
+        {
+          "nodeId": "e0672337-393d-4d58-9981-cc96dbcbdf56",
+          "actionLabelToExecute": "D",
+          "childrenNodeIds": []
+        },
+        {
+          "nodeId": "e3a879bd-113b-49a0-a3a1-76b8cfe1643e",
+          "actionLabelToExecute": "L",
+          "childrenNodeIds": [],
+          "parentNodeId": "70b5ebfe-a0e1-4d80-b060-784af5d59929"
+        },
+        {
+          "nodeId": "e80adcab-e258-430a-8780-9f33e172ad10",
+          "actionLabelToExecute": "I",
+          "childrenNodeIds": [],
+          "parentNodeId": "a043f22c-d8c1-46e0-81f4-489c7aa9a66f"
+        },
+        {
+          "nodeId": "ee373b0b-3249-45fc-aa98-8f925ed02d34",
+          "actionLabelToExecute": "O",
+          "childrenNodeIds": [],
+          "parentNodeId": "d93c8af9-62f2-496c-a88a-89b618965450"
+        }
+      ]
+    }
+  ]
+}
