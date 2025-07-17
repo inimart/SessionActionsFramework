@@ -9,10 +9,10 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Slot
 from typing import Optional, Any, List, Dict
 
-from ...data_models.project_data import ProjectData
-from ...data_models.action_definition import ConfiguredSubAction
-from ...data_models.sub_action_definition import SubActionDefinition, SubActionFieldDefinition
-from ...data_models.common_types import FieldType
+from framework_tool.data_models.project_data import ProjectData
+from framework_tool.data_models.action_definition import ConfiguredSubAction
+from framework_tool.data_models.sub_action_definition import SubActionDefinition, SubActionFieldDefinition
+from framework_tool.data_models.common_types import FieldType
 
 
 class ConfiguredSubActionDialog(QDialog):

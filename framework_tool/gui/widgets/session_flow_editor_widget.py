@@ -11,11 +11,12 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction, QCursor, QColor, QPalette
 from PySide6.QtCore import Qt, Signal, Slot, QPoint
 from typing import Optional, List, Dict, Any, Tuple
+import copy
 
 # Import data models
-from ...data_models.project_data import ProjectData
-from ...data_models.session_graph import SessionActionsGraph, ActionNode, StepDefinition
-from ...data_models.action_definition import ActionDefinition
+from framework_tool.data_models.project_data import ProjectData
+from framework_tool.data_models.session_graph import SessionActionsGraph, ActionNode, StepDefinition
+from framework_tool.data_models.action_definition import ActionDefinition
 
 # Import dialogs
 from ..dialogs.select_action_label_dialog import SelectActionLabelDialog
@@ -33,7 +34,8 @@ class SessionFlowEditorWidget(QWidget):
         self._current_session_name: Optional[str] = None
         self._action_card_widgets: Dict[str, ActionCardWidget] = {}
         self._selected_action_card: Optional[ActionCardWidget] = None
-        self._step_frames: Dict[str, QFrame] = {} 
+        self._step_frames: Dict[str, QFrame] = {}
+        self._step_clipboard: Optional[List[ActionNode]] = None  # Store copied step content 
         self._init_ui()
 
     def _init_ui(self):
@@ -83,6 +85,21 @@ class SessionFlowEditorWidget(QWidget):
             self.session_name_display.setText("Editing Session: [No Session Loaded]")
             self._enable_editing_controls(False)
 
+    def refresh_current_view(self):
+        """Refresh the current view to update action card content without full reload."""
+        if not self._current_session_graph:
+            return
+            
+        # Update all existing action cards
+        for node_id, card_widget in self._action_card_widgets.items():
+            if card_widget:
+                card_widget.refresh_content()
+        
+        # Update step titles if needed
+        for step_def, step_frame in self._step_frames.items():
+            if hasattr(step_frame, 'step_label'):
+                step_frame.step_label.setText(f"Step: {step_def.step_name}")
+
     def _populate_steps_display(self, graph: SessionActionsGraph):
         if not graph or not graph.steps:
             for i in reversed(range(self.steps_layout.count())):
@@ -114,7 +131,7 @@ class SessionFlowEditorWidget(QWidget):
         title_text = f"Step {step_index}"
         if step_def.step_name: title_text += f": {step_def.step_name}"
         step_title_label = QLabel(title_text)
-        step_title_label.setStyleSheet("font-weight: bold; background-color: #E8E8E8; padding: 5px; border-radius: 3px;")
+        step_title_label.setStyleSheet("font-weight: bold; background-color: #E8E8E8; color: black; padding: 5px; border-radius: 3px;")
         step_main_layout.addWidget(step_title_label)
         action_grid_container = QWidget(step_frame) 
         action_grid_layout = QGridLayout(action_grid_container)
@@ -170,6 +187,11 @@ class SessionFlowEditorWidget(QWidget):
         card.customContextMenuRequested.connect(
             lambda pos, an=action_node, cw=card: self._show_action_card_context_menu(pos, an, cw)
         )
+        # Connect hover button signals
+        card.add_parent_requested.connect(self._handle_add_parent_action)
+        card.add_child_requested.connect(self._handle_add_child_action_from_hover)
+        card.add_sibling_requested.connect(self._handle_add_sibling_action)
+        card.insert_intermediate_requested.connect(self._handle_insert_intermediate_action)
         
         max_row_occupied_by_branch = current_row # This node occupies the current_row
         cols_spanned_by_this_node = 1 # Default span for this node itself
@@ -214,12 +236,33 @@ class SessionFlowEditorWidget(QWidget):
         menu = QMenu(self)
         add_root_action = menu.addAction("Add Action to Step (Root)")
         add_root_action.triggered.connect(lambda: self._handle_add_action_to_step(step_def))
+        
+        menu.addSeparator()
+        
+        # Copy/Paste functionality
+        copy_step = menu.addAction("Copy step")
+        copy_step.triggered.connect(lambda: self._handle_copy_step(step_def))
+        
+        paste_step = menu.addAction("Paste step content")
+        paste_step.setEnabled(self._step_clipboard is not None)
+        paste_step.triggered.connect(lambda: self._handle_paste_step_content(step_def))
+        
         current_step_index = -1
         if self._current_session_graph:
             try: current_step_index = self._current_session_graph.steps.index(step_def)
             except ValueError: pass 
         if current_step_index != -1:
             menu.addSeparator()
+            
+            # Add step above/below
+            add_step_above = menu.addAction("Add step above")
+            add_step_above.triggered.connect(lambda: self._handle_add_step_above(step_def))
+            
+            add_step_below = menu.addAction("Add step below")
+            add_step_below.triggered.connect(lambda: self._handle_add_step_below(step_def))
+            
+            menu.addSeparator()
+            
             move_step_up = menu.addAction("Move Step Up")
             move_step_up.setEnabled(current_step_index > 0)
             move_step_up.triggered.connect(lambda: self._handle_move_step(step_def, "up"))
@@ -236,9 +279,27 @@ class SessionFlowEditorWidget(QWidget):
         menu = QMenu(self)
         add_child_action = menu.addAction(f"Add Child Action to '{action_node.action_label_to_execute}'")
         add_child_action.triggered.connect(lambda: self._handle_add_child_action(action_node))
+        
+        # Check conditions for move up/down actions
+        can_move_up = self._can_move_action_up(action_node)
+        can_move_down = self._can_move_action_down(action_node)
+        
+        if can_move_up or can_move_down:
+            menu.addSeparator()
+            
+            if can_move_up:
+                move_up_action = menu.addAction("Sposta action in su")
+                move_up_action.triggered.connect(lambda: self._handle_move_action_up(action_node))
+            
+            if can_move_down:
+                move_down_action = menu.addAction("Sposta action in giù")
+                move_down_action.triggered.connect(lambda: self._handle_move_action_down(action_node))
+        
         menu.addSeparator()
         remove_action = menu.addAction(f"Remove Action '{action_node.action_label_to_execute}'")
-        remove_action.triggered.connect(lambda: self._handle_remove_action_node(action_node))
+        remove_action.triggered.connect(lambda: self._handle_remove_action_only(action_node))
+        remove_branch = menu.addAction(f"Remove Branch '{action_node.action_label_to_execute}'")
+        remove_branch.triggered.connect(lambda: self._handle_remove_action_node(action_node))
         menu.exec(card_widget.mapToGlobal(position))
 
     @Slot()
@@ -338,6 +399,485 @@ class SessionFlowEditorWidget(QWidget):
             self._current_session_graph.rebuild_node_lookup()
             self.load_session_graph(self._current_session_name, self._current_session_graph)
             self.session_graph_changed.emit()
+
+    def refresh_current_view(self):
+        """
+        Refreshes the current view by updating existing action cards when their data changes.
+        This is more efficient than completely reloading the session graph as it preserves
+        the current UI state (selections, scroll position, etc.) while updating card content.
+        """
+        if not self._current_session_graph or not self._action_card_widgets:
+            return
+        
+        # Update all existing action card widgets with their current data
+        for node_id, card_widget in self._action_card_widgets.items():
+            # Find the corresponding action node in the current session graph
+            action_node = self._current_session_graph.get_node_by_id(node_id)
+            if action_node:
+                # Update the card widget's action node reference
+                card_widget.action_node = action_node
+                # Refresh the card's visual content
+                card_widget.refresh_content()
+        
+        # Update step title labels to reflect any changes in step names
+        for step_def in self._current_session_graph.steps:
+            if step_def.step_id in self._step_frames:
+                step_frame = self._step_frames[step_def.step_id]
+                step_index = self._current_session_graph.steps.index(step_def)
+                title_text = f"Step {step_index}"
+                if step_def.step_name:
+                    title_text += f": {step_def.step_name}"
+                
+                # Find and update the step title label
+                step_layout = step_frame.layout()
+                if step_layout and step_layout.count() > 0:
+                    title_widget = step_layout.itemAt(0).widget()
+                    if isinstance(title_widget, QLabel):
+                        title_widget.setText(title_text)
+        
+        # Emit signal to notify other components that the view has been refreshed
+        self.session_graph_changed.emit()
+
+    def _handle_add_parent_action(self, node_id: str):
+        """Handle adding a parent action from hover button."""
+        if not self._current_session_graph or not self.project_data_ref:
+            return
+        
+        action_node = self._current_session_graph.get_node_by_id(node_id)
+        if not action_node:
+            return
+            
+        if not self.project_data_ref.action_definitions:
+            QMessageBox.warning(self, "No Actions Defined", "Please define some Actions first.")
+            return
+            
+        selected_action_label = SelectActionLabelDialog.get_selected_action_label(self.project_data_ref.action_definitions, self)
+        if not selected_action_label:
+            return
+            
+        # Create new parent action
+        new_parent_node = ActionNode(action_label_to_execute=selected_action_label, parent_node_id=action_node.parent_node_id)
+        self._current_session_graph.nodes.append(new_parent_node)
+        
+        # Update relationships
+        if action_node.parent_node_id:
+            # Child node - update existing parent's children
+            old_parent = self._current_session_graph.get_node_by_id(action_node.parent_node_id)
+            if old_parent:
+                old_parent.children_node_ids = [new_parent_node.node_id if child_id == node_id else child_id for child_id in old_parent.children_node_ids]
+        else:
+            # Root node - update step's root nodes
+            for step_def in self._current_session_graph.steps:
+                if node_id in step_def.root_node_ids:
+                    step_def.root_node_ids = [new_parent_node.node_id if root_id == node_id else root_id for root_id in step_def.root_node_ids]
+                    break
+        
+        # Set new parent-child relationship
+        action_node.parent_node_id = new_parent_node.node_id
+        new_parent_node.children_node_ids = [node_id]
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
+
+    def _handle_add_child_action_from_hover(self, node_id: str):
+        """Handle adding a child action from hover button (wrapper for existing method)."""
+        action_node = self._current_session_graph.get_node_by_id(node_id) if self._current_session_graph else None
+        if action_node:
+            self._handle_add_child_action(action_node)
+
+    def _handle_add_sibling_action(self, node_id: str):
+        """Handle adding a sibling action from hover button."""
+        if not self._current_session_graph or not self.project_data_ref:
+            return
+        
+        action_node = self._current_session_graph.get_node_by_id(node_id)
+        if not action_node:
+            return
+            
+        if not self.project_data_ref.action_definitions:
+            QMessageBox.warning(self, "No Actions Defined", "Please define some Actions first.")
+            return
+            
+        selected_action_label = SelectActionLabelDialog.get_selected_action_label(self.project_data_ref.action_definitions, self)
+        if not selected_action_label:
+            return
+            
+        # Create new sibling action
+        new_sibling_node = ActionNode(action_label_to_execute=selected_action_label, parent_node_id=action_node.parent_node_id)
+        self._current_session_graph.nodes.append(new_sibling_node)
+        
+        # Add to same parent or step
+        if action_node.parent_node_id:
+            # Has parent - add to parent's children
+            parent_node = self._current_session_graph.get_node_by_id(action_node.parent_node_id)
+            if parent_node:
+                parent_node.children_node_ids.append(new_sibling_node.node_id)
+        else:
+            # Root node - add to same step
+            for step_def in self._current_session_graph.steps:
+                if node_id in step_def.root_node_ids:
+                    step_def.root_node_ids.append(new_sibling_node.node_id)
+                    break
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
+
+    def _handle_insert_intermediate_action(self, node_id: str):
+        """Handle inserting an intermediate action between a node and its multiple children."""
+        if not self._current_session_graph or not self.project_data_ref:
+            return
+        
+        action_node = self._current_session_graph.get_node_by_id(node_id)
+        if not action_node or len(action_node.children_node_ids) <= 1:
+            return  # Only works with nodes that have multiple children
+            
+        if not self.project_data_ref.action_definitions:
+            QMessageBox.warning(self, "No Actions Defined", "Please define some Actions first.")
+            return
+            
+        selected_action_label = SelectActionLabelDialog.get_selected_action_label(self.project_data_ref.action_definitions, self)
+        if not selected_action_label:
+            return
+            
+        # Create intermediate action
+        intermediate_node = ActionNode(action_label_to_execute=selected_action_label, parent_node_id=action_node.node_id)
+        self._current_session_graph.nodes.append(intermediate_node)
+        
+        # Update relationships: intermediate becomes sole child of original node
+        # and takes over all the original children
+        original_children = action_node.children_node_ids.copy()
+        action_node.children_node_ids = [intermediate_node.node_id]
+        intermediate_node.children_node_ids = original_children
+        
+        # Update parent references of original children
+        for child_id in original_children:
+            child_node = self._current_session_graph.get_node_by_id(child_id)
+            if child_node:
+                child_node.parent_node_id = intermediate_node.node_id
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
+
+    def _handle_remove_action_only(self, action_to_remove: ActionNode):
+        """Remove only the specified action, promoting its children to the parent level."""
+        if not self._current_session_graph:
+            return
+            
+        reply = QMessageBox.question(self, "Confirm Removal", 
+                                   f"Remove Action '{action_to_remove.action_label_to_execute}' only? Its children will be promoted to the parent level.",
+                                   QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        
+        # Get children that will be promoted
+        children_to_promote = action_to_remove.children_node_ids.copy()
+        
+        # Update parent relationships for promoted children
+        for child_id in children_to_promote:
+            child_node = self._current_session_graph.get_node_by_id(child_id)
+            if child_node:
+                child_node.parent_node_id = action_to_remove.parent_node_id
+        
+        # Update parent's children or step's root nodes
+        if action_to_remove.parent_node_id:
+            # Has parent - update parent's children list
+            parent_node = self._current_session_graph.get_node_by_id(action_to_remove.parent_node_id)
+            if parent_node:
+                # Replace the removed action with its children
+                new_children = []
+                for child_id in parent_node.children_node_ids:
+                    if child_id == action_to_remove.node_id:
+                        new_children.extend(children_to_promote)  # Add promoted children
+                    else:
+                        new_children.append(child_id)  # Keep existing children
+                parent_node.children_node_ids = new_children
+        else:
+            # Is root node - update step's root nodes
+            for step_def in self._current_session_graph.steps:
+                if action_to_remove.node_id in step_def.root_node_ids:
+                    # Replace the removed action with its children
+                    new_roots = []
+                    for root_id in step_def.root_node_ids:
+                        if root_id == action_to_remove.node_id:
+                            new_roots.extend(children_to_promote)  # Add promoted children
+                        else:
+                            new_roots.append(root_id)  # Keep existing roots
+                    step_def.root_node_ids = new_roots
+                    break
+        
+        # Remove the action from the graph
+        self._current_session_graph.nodes = [n for n in self._current_session_graph.nodes if n.node_id != action_to_remove.node_id]
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
+
+    def _handle_copy_step(self, step_def: StepDefinition):
+        """Copy all action nodes from a step to the clipboard."""
+        if not self._current_session_graph:
+            return
+        
+        # Get all nodes in this step (including hierarchical structure)
+        nodes_to_copy = []
+        queue = list(step_def.root_node_ids)
+        processed = set()
+        
+        while queue:
+            node_id = queue.pop(0)
+            if node_id in processed:
+                continue
+            processed.add(node_id)
+            
+            node = self._current_session_graph.get_node_by_id(node_id)
+            if node:
+                nodes_to_copy.append(node)
+                queue.extend(node.children_node_ids)
+        
+        # Deep copy the nodes to avoid reference issues
+        self._step_clipboard = copy.deepcopy(nodes_to_copy)
+        
+        QMessageBox.information(self, "Step Copied", f"Step '{step_def.step_name or step_def.step_id[:8]}' with {len(self._step_clipboard)} actions copied to clipboard.")
+
+    def _handle_paste_step_content(self, step_def: StepDefinition):
+        """Paste copied step content into the current step."""
+        if not self._step_clipboard or not self._current_session_graph:
+            return
+        
+        # Check if step has existing content
+        has_existing_content = bool(step_def.root_node_ids)
+        
+        if has_existing_content:
+            reply = QMessageBox.question(
+                self, 
+                "Replace Step Content",
+                f"Step '{step_def.step_name or step_def.step_id[:8]}' already has content. "
+                "Do you want to replace it with the copied content?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+        
+        # Remove existing content if any
+        if has_existing_content:
+            nodes_to_remove = set()
+            queue = list(step_def.root_node_ids)
+            processed = set()
+            
+            while queue:
+                node_id = queue.pop(0)
+                if node_id in processed:
+                    continue
+                processed.add(node_id)
+                nodes_to_remove.add(node_id)
+                
+                node = self._current_session_graph.get_node_by_id(node_id)
+                if node:
+                    queue.extend(node.children_node_ids)
+            
+            # Remove old nodes
+            self._current_session_graph.nodes = [n for n in self._current_session_graph.nodes if n.node_id not in nodes_to_remove]
+            step_def.root_node_ids.clear()
+        
+        # Add copied nodes
+        node_id_mapping = {}  # Map old IDs to new IDs
+        new_nodes = []
+        
+        for copied_node in self._step_clipboard:
+            # Create new node with new ID
+            new_node = ActionNode(
+                action_label_to_execute=copied_node.action_label_to_execute,
+                parent_node_id=None  # Will be set later
+            )
+            new_nodes.append(new_node)
+            node_id_mapping[copied_node.node_id] = new_node.node_id
+        
+        # Update parent-child relationships with new IDs
+        for i, copied_node in enumerate(self._step_clipboard):
+            new_node = new_nodes[i]
+            
+            # Update parent reference
+            if copied_node.parent_node_id and copied_node.parent_node_id in node_id_mapping:
+                new_node.parent_node_id = node_id_mapping[copied_node.parent_node_id]
+            
+            # Update children references
+            new_node.children_node_ids = [
+                node_id_mapping[child_id] for child_id in copied_node.children_node_ids
+                if child_id in node_id_mapping
+            ]
+        
+        # Add new nodes to graph
+        self._current_session_graph.nodes.extend(new_nodes)
+        
+        # Update step root nodes (nodes without parents)
+        for new_node in new_nodes:
+            if new_node.parent_node_id is None:
+                step_def.root_node_ids.append(new_node.node_id)
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
+        
+        QMessageBox.information(self, "Step Pasted", f"Pasted {len(self._step_clipboard)} actions into step '{step_def.step_name or step_def.step_id[:8]}'.")
+
+    def _handle_add_step_above(self, step_def: StepDefinition):
+        """Add a new step above the current step."""
+        if not self._current_session_graph:
+            return
+        
+        step_name, ok = QInputDialog.getText(self, "Add Step Above", "Enter optional name for the new step:")
+        if not ok:
+            return
+        
+        try:
+            current_index = self._current_session_graph.steps.index(step_def)
+            new_step = StepDefinition(step_name=step_name.strip())
+            self._current_session_graph.steps.insert(current_index, new_step)
+            
+            self.load_session_graph(self._current_session_name, self._current_session_graph)
+            self.session_graph_changed.emit()
+        except ValueError:
+            QMessageBox.critical(self, "Error", "Could not find step in data model.")
+
+    def _handle_add_step_below(self, step_def: StepDefinition):
+        """Add a new step below the current step."""
+        if not self._current_session_graph:
+            return
+        
+        step_name, ok = QInputDialog.getText(self, "Add Step Below", "Enter optional name for the new step:")
+        if not ok:
+            return
+        
+        try:
+            current_index = self._current_session_graph.steps.index(step_def)
+            new_step = StepDefinition(step_name=step_name.strip())
+            self._current_session_graph.steps.insert(current_index + 1, new_step)
+            
+            self.load_session_graph(self._current_session_name, self._current_session_graph)
+            self.session_graph_changed.emit()
+        except ValueError:
+            QMessageBox.critical(self, "Error", "Could not find step in data model.")
+
+    def _can_move_action_up(self, action_node: ActionNode) -> bool:
+        """Check if an action can be moved up in the hierarchy."""
+        if not self._current_session_graph or not action_node.parent_node_id:
+            return False
+        
+        parent_node = self._current_session_graph.get_node_by_id(action_node.parent_node_id)
+        if not parent_node:
+            return False
+        
+        # Can move up if parent has only one child (this action)
+        return len(parent_node.children_node_ids) == 1
+
+    def _can_move_action_down(self, action_node: ActionNode) -> bool:
+        """Check if an action can be moved down in the hierarchy."""
+        if not self._current_session_graph:
+            return False
+        
+        # Can move down if this action has only one child
+        return len(action_node.children_node_ids) == 1
+
+    def _handle_move_action_up(self, action_node: ActionNode):
+        """Move action up in hierarchy. A > B > C becomes B > A > C"""
+        if not self._current_session_graph or not self._can_move_action_up(action_node):
+            return
+        
+        parent_node = self._current_session_graph.get_node_by_id(action_node.parent_node_id)
+        if not parent_node:
+            return
+        
+        # Store action's children before restructuring
+        action_children = action_node.children_node_ids.copy()
+        
+        # Restructure: action takes parent's place
+        action_node.parent_node_id = parent_node.parent_node_id
+        action_node.children_node_ids = [parent_node.node_id]
+        
+        # Parent becomes child of action, gets action's original children
+        parent_node.parent_node_id = action_node.node_id
+        parent_node.children_node_ids = action_children
+        
+        # Update parent references for action's original children
+        for child_id in action_children:
+            child_node = self._current_session_graph.get_node_by_id(child_id)
+            if child_node:
+                child_node.parent_node_id = parent_node.node_id
+        
+        # Update grandparent's children or step root nodes
+        if action_node.parent_node_id:
+            grandparent_node = self._current_session_graph.get_node_by_id(action_node.parent_node_id)
+            if grandparent_node:
+                # Replace parent with action in grandparent's children
+                grandparent_node.children_node_ids = [
+                    action_node.node_id if child_id == parent_node.node_id else child_id
+                    for child_id in grandparent_node.children_node_ids
+                ]
+        else:
+            # Parent was root node, now action becomes root
+            for step_def in self._current_session_graph.steps:
+                if parent_node.node_id in step_def.root_node_ids:
+                    step_def.root_node_ids = [
+                        action_node.node_id if root_id == parent_node.node_id else root_id
+                        for root_id in step_def.root_node_ids
+                    ]
+                    break
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
+
+    def _handle_move_action_down(self, action_node: ActionNode):
+        """Move action down in hierarchy. A > B > C becomes A > C > B"""
+        if not self._current_session_graph or not self._can_move_action_down(action_node):
+            return
+        
+        child_node_id = action_node.children_node_ids[0]
+        child_node = self._current_session_graph.get_node_by_id(child_node_id)
+        if not child_node:
+            return
+        
+        # Store child's children before restructuring
+        child_children = child_node.children_node_ids.copy()
+        
+        # Restructure: child takes action's place
+        child_node.parent_node_id = action_node.parent_node_id
+        child_node.children_node_ids = [action_node.node_id]
+        
+        # Action becomes child of its former child, keeps empty children initially
+        action_node.parent_node_id = child_node.node_id
+        action_node.children_node_ids = child_children
+        
+        # Update parent references for child's original children
+        for grandchild_id in child_children:
+            grandchild_node = self._current_session_graph.get_node_by_id(grandchild_id)
+            if grandchild_node:
+                grandchild_node.parent_node_id = action_node.node_id
+        
+        # Update parent's children or step root nodes
+        if child_node.parent_node_id:
+            parent_node = self._current_session_graph.get_node_by_id(child_node.parent_node_id)
+            if parent_node:
+                # Replace action with child in parent's children
+                parent_node.children_node_ids = [
+                    child_node.node_id if child_id == action_node.node_id else child_id
+                    for child_id in parent_node.children_node_ids
+                ]
+        else:
+            # Action was root node, now child becomes root
+            for step_def in self._current_session_graph.steps:
+                if action_node.node_id in step_def.root_node_ids:
+                    step_def.root_node_ids = [
+                        child_node.node_id if root_id == action_node.node_id else root_id
+                        for root_id in step_def.root_node_ids
+                    ]
+                    break
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
 
 # Standalone test
 if __name__ == '__main__':

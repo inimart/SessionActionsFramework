@@ -5,7 +5,7 @@ from enum import Enum
 
 class FieldType(Enum):
     """
-    Enumeration of supported field types for SubActionDefinition fields.
+    Enumeration of supported field types for Action custom fields.
     The string values will be used in the JSON output.
     """
     BOOLEAN = "boolean"
@@ -14,10 +14,8 @@ class FieldType(Enum):
     INTEGER = "integer"
     VECTOR2 = "Vector2" # For simplicity, we'll store these as dicts in JSON
     VECTOR3 = "Vector3" # e.g., {"x": 0.0, "y": 0.0, "z": 0.0}
-    QUATERNION = "Quaternion" # e.g., {"x":0,"y":0,"z":0,"w":1}
-    COLOR_RGBA = "ColorRGBA" # e.g., {"r":1,"g":1,"b":1,"a":1}
-    ENUM_STRING = "EnumString" # The actual enum values will be stored in SubActionFieldDefinition
-    ASSET_PATH_STRING = "AssetPathString" # A string representing a path to a Unity asset
+    RGBA = "RGBA" # e.g., {"r":1,"g":1,"b":1,"a":1}
+    ENUM_STRING = "EnumString" # The actual enum values will be stored in CustomFieldDefinition
     ITEM_LABEL_REFERENCE = "ItemLabelReference" # A string referencing an ItemLabel
 
     @classmethod

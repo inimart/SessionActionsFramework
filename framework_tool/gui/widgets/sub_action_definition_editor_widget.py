@@ -10,8 +10,8 @@ from PySide6.QtCore import Qt, Signal, Slot
 from typing import Optional, List
 
 # Import data models
-from ...data_models.sub_action_definition import SubActionDefinition, SubActionFieldDefinition
-from ...data_models.common_types import FieldType
+from framework_tool.data_models.sub_action_definition import SubActionDefinition, SubActionFieldDefinition
+from framework_tool.data_models.common_types import FieldType
 
 # Import the dialog for editing fields
 from ..dialogs.field_edit_dialog import FieldEditDialog

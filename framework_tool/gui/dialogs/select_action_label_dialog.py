@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Slot
 from typing import Optional, List, Dict # Added Dict
 
-from ...data_models.action_definition import ActionDefinition # For type hinting if needed
+from framework_tool.data_models.action_definition import ActionDefinition # For type hinting if needed
 
 
 class SelectActionLabelDialog(QDialog):
@@ -64,9 +64,7 @@ class SelectActionLabelDialog(QDialog):
         for label in action_labels:
             action_def = self.action_definitions.get(label)
             item_text = label
-            if action_def and action_def.help_label:
-                item_text = f"{label} ({action_def.help_label})"
-            elif action_def and action_def.description:
+            if action_def and action_def.description:
                 desc_summary = action_def.description.split('\n')[0]
                 if len(desc_summary) > 40: desc_summary = desc_summary[:37] + "..."
                 item_text = f"{label} ({desc_summary})"

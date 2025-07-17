@@ -9,8 +9,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, Slot
 from typing import Optional
 
-from ...data_models.project_data import ProjectData
-from ...data_models.session_graph import SessionActionsGraph, ActionNode 
+from framework_tool.data_models.project_data import ProjectData
+from framework_tool.data_models.session_graph import SessionActionsGraph, ActionNode 
 from ..widgets.session_flow_editor_widget import SessionFlowEditorWidget # The new flow editor
 from ..widgets.action_node_details_widget import ActionNodeDetailsWidget # The new details panel
 

@@ -17,7 +17,9 @@ class ActionNode:
                  action_label_to_execute: str, 
                  node_id: Optional[str] = None, 
                  parent_node_id: Optional[str] = None, # ID of the ActionNode that this is a child of
-                 children_node_ids: Optional[List[str]] = None): # ORDERED list of child node IDs
+                 children_node_ids: Optional[List[str]] = None, # ORDERED list of child node IDs
+                 instance_label: str = "",  # Custom label for this instance
+                 custom_field_values: Optional[Dict[str, Any]] = None): # Values for custom fields
         
         if not action_label_to_execute:
             raise ValueError("action_label_to_execute cannot be empty for an ActionNode.")
@@ -30,11 +32,17 @@ class ActionNode:
         # or a sequence if the game logic interprets their order strictly.
         self.children_node_ids: List[str] = children_node_ids if children_node_ids is not None else []
         
+        # Instance customization
+        self.instance_label: str = instance_label
+        self.custom_field_values: Dict[str, Any] = custom_field_values if custom_field_values is not None else {}
+        
     def to_dict(self) -> Dict[str, Any]:
         data = {
             "nodeId": self.node_id,
             "actionLabelToExecute": self.action_label_to_execute,
-            "childrenNodeIds": self.children_node_ids 
+            "childrenNodeIds": self.children_node_ids,
+            "instanceLabel": self.instance_label,
+            "customFieldValues": self.custom_field_values
         }
         if self.parent_node_id is not None:
             data["parentNodeId"] = self.parent_node_id
@@ -54,8 +62,9 @@ class ActionNode:
             node_id=node_id,
             action_label_to_execute=action_label,
             parent_node_id=data.get("parentNodeId"),
-            children_node_ids=data.get("childrenNodeIds", [])
-            # forced_next_node_id is removed
+            children_node_ids=data.get("childrenNodeIds", []),
+            instance_label=data.get("instanceLabel", ""),
+            custom_field_values=data.get("customFieldValues", {})
         )
 
 class StepDefinition:

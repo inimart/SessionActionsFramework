@@ -84,19 +84,16 @@ class ProjectData:
     @classmethod
     def from_dict(cls, data: Dict[str, Any],
                   # Pass class types for deserialization to avoid direct imports here
-                  sub_action_def_cls,
                   action_def_cls,
                   session_graph_cls) -> 'ProjectData':
         instance = cls()
         instance.project_metadata = ProjectMetadata.from_dict(data.get("projectMetadata", {}))
         instance.action_labels = data.get("actionLabels", [])
         instance.item_labels = data.get("itemLabels", [])
-        instance.sub_action_labels = data.get("subActionLabels", [])
+        # SubAction references removed - backwards compatibility with old files
+        instance.sub_action_labels = data.get("subActionLabels", [])  # Keep for loading old files
+        instance.sub_action_definitions = data.get("subActionDefinitions", {})  # Keep for loading old files
 
-        instance.sub_action_definitions = {
-            key: sub_action_def_cls.from_dict(definition_data)
-            for key, definition_data in data.get("subActionDefinitions", {}).items()
-        }
         instance.action_definitions = {
             key: action_def_cls.from_dict(definition_data)
             for key, definition_data in data.get("actionDefinitions", {}).items()

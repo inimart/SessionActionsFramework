@@ -9,8 +9,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, Slot
 from typing import Optional, Dict, List
 
-from ...data_models.project_data import ProjectData
-from ...data_models.sub_action_definition import SubActionDefinition
+from framework_tool.data_models.project_data import ProjectData
+from framework_tool.data_models.sub_action_definition import SubActionDefinition
 from ..widgets.sub_action_definition_editor_widget import SubActionDefinitionEditorWidget
 
 

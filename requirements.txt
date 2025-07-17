@@ -1,0 +1,18 @@
+# Session Framework Tool - Python Dependencies
+# GUI Framework for Session Framework project management
+
+# Qt for Python - Main GUI framework
+PySide6>=6.5.0,<7.0.0
+
+# Additional dependencies may be needed depending on your system:
+# For better compatibility on some systems, you might also want:
+# shiboken6>=6.5.0,<7.0.0  # Usually installed automatically with PySide6
+
+# Standard library modules used (no installation required):
+# - datetime (built-in)
+# - json (built-in) 
+# - os (built-in)
+# - sys (built-in)
+# - uuid (built-in)
+# - enum (built-in)
+# - typing (built-in)

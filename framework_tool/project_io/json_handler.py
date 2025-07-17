@@ -8,7 +8,7 @@ from typing import Dict, Any
 # Import data model classes from the data_models package
 # We need to import them to pass their .from_dict class methods
 from ..data_models.project_data import ProjectData
-from ..data_models.sub_action_definition import SubActionDefinition
+# SubActionDefinition removed - no longer used
 from ..data_models.action_definition import ActionDefinition
 from ..data_models.session_graph import SessionActionsGraph
 
@@ -95,7 +95,6 @@ def load_project(filepath: str) -> ProjectData:
         # to handle the creation of nested objects correctly.
         project_data = ProjectData.from_dict(
             data_dict,
-            sub_action_def_cls=SubActionDefinition,
             action_def_cls=ActionDefinition,
             session_graph_cls=SessionActionsGraph
         )

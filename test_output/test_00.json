@@ -1,0 +1,221 @@
+{
+  "projectMetadata": {
+    "projectName": "New SessionActions Project",
+    "formatVersion": "1.0.0",
+    "creationDate": "2025-07-03T13:31:34.174774+00:00",
+    "author": ""
+  },
+  "actionLabels": [
+    "a",
+    "b",
+    "c",
+    "help",
+    "move2pp"
+  ],
+  "itemLabels": [
+    "a",
+    "b",
+    "c"
+  ],
+  "subActionLabels": [],
+  "subActionDefinitions": {},
+  "actionDefinitions": {
+    "a": {
+      "description": "",
+      "autocomplete": false,
+      "customFields": []
+    },
+    "b": {
+      "description": "",
+      "autocomplete": false,
+      "customFields": []
+    },
+    "c": {
+      "description": "",
+      "autocomplete": false,
+      "customFields": []
+    },
+    "help": {
+      "description": "",
+      "autocomplete": true,
+      "customFields": [
+        {
+          "fieldName": "sampleBool",
+          "fieldType": "boolean",
+          "defaultValue": "tre"
+        }
+      ]
+    },
+    "move2pp": {
+      "description": "werwerwerwer",
+      "autocomplete": false,
+      "customFields": [
+        {
+          "fieldName": "item",
+          "fieldType": "ItemLabelReference",
+          "defaultValue": "a"
+        },
+        {
+          "fieldName": "pp",
+          "fieldType": "ItemLabelReference",
+          "defaultValue": "b"
+        },
+        {
+          "fieldName": "qwe",
+          "fieldType": "boolean",
+          "defaultValue": false
+        },
+        {
+          "fieldName": "wer",
+          "fieldType": "float",
+          "defaultValue": 0.0
+        },
+        {
+          "fieldName": "ert",
+          "fieldType": "Vector2",
+          "defaultValue": {
+            "x": 0.0,
+            "y": 0.0
+          }
+        }
+      ]
+    }
+  },
+  "sessionActions": [
+    {
+      "sessionName": "test",
+      "steps": [
+        {
+          "stepId": "cf524bc2-1627-46b8-abaa-c860ed1d642b",
+          "stepName": "",
+          "rootNodeIds": [
+            "579da33b-84f6-4b50-a6b1-d6ad1ffddceb",
+            "a6272404-5048-4425-ba51-419b0e69ea53",
+            "8eeadbbf-929b-4c4e-8d41-c24570022a99",
+            "94b27d10-d172-4e05-8c2c-747c4d94a93a"
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "nodeId": "2f6e4ace-9edb-4821-84de-17a82d488a78",
+          "actionLabelToExecute": "a",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {},
+          "parentNodeId": "94b27d10-d172-4e05-8c2c-747c4d94a93a"
+        },
+        {
+          "nodeId": "35676f59-0354-41b8-8132-2a00ed4aae69",
+          "actionLabelToExecute": "help",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {},
+          "parentNodeId": "ed1acbff-0ad0-461b-ad4d-2da5275cae05"
+        },
+        {
+          "nodeId": "550b57b0-b1ce-468d-881c-b87949d3daff",
+          "actionLabelToExecute": "a",
+          "childrenNodeIds": [
+            "9b298e79-9a7a-476f-a49a-ae55b708149a"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {},
+          "parentNodeId": "579da33b-84f6-4b50-a6b1-d6ad1ffddceb"
+        },
+        {
+          "nodeId": "55c78a04-fcd5-4b9a-8eac-ce147d73167e",
+          "actionLabelToExecute": "c",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {},
+          "parentNodeId": "94b27d10-d172-4e05-8c2c-747c4d94a93a"
+        },
+        {
+          "nodeId": "579da33b-84f6-4b50-a6b1-d6ad1ffddceb",
+          "actionLabelToExecute": "move2pp",
+          "childrenNodeIds": [
+            "550b57b0-b1ce-468d-881c-b87949d3daff",
+            "d90e934a-b21d-477c-a2ee-2ef8463db4de"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "item": "b",
+            "qwe": true
+          }
+        },
+        {
+          "nodeId": "8eeadbbf-929b-4c4e-8d41-c24570022a99",
+          "actionLabelToExecute": "help",
+          "childrenNodeIds": [],
+          "instanceLabel": "rere",
+          "customFieldValues": {
+            "sampleBool": true
+          }
+        },
+        {
+          "nodeId": "94b27d10-d172-4e05-8c2c-747c4d94a93a",
+          "actionLabelToExecute": "help",
+          "childrenNodeIds": [
+            "55c78a04-fcd5-4b9a-8eac-ce147d73167e",
+            "2f6e4ace-9edb-4821-84de-17a82d488a78"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {}
+        },
+        {
+          "nodeId": "9b298e79-9a7a-476f-a49a-ae55b708149a",
+          "actionLabelToExecute": "c",
+          "childrenNodeIds": [
+            "ed1acbff-0ad0-461b-ad4d-2da5275cae05",
+            "e0a02b87-0f93-4be7-88e2-4ee050b18adb"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {},
+          "parentNodeId": "550b57b0-b1ce-468d-881c-b87949d3daff"
+        },
+        {
+          "nodeId": "a6272404-5048-4425-ba51-419b0e69ea53",
+          "actionLabelToExecute": "move2pp",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "ert": {
+              "x": 3.0,
+              "y": 1.0
+            },
+            "pp": "a",
+            "qwe": true,
+            "wer": 1.0
+          }
+        },
+        {
+          "nodeId": "d90e934a-b21d-477c-a2ee-2ef8463db4de",
+          "actionLabelToExecute": "b",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {},
+          "parentNodeId": "579da33b-84f6-4b50-a6b1-d6ad1ffddceb"
+        },
+        {
+          "nodeId": "e0a02b87-0f93-4be7-88e2-4ee050b18adb",
+          "actionLabelToExecute": "help",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {},
+          "parentNodeId": "9b298e79-9a7a-476f-a49a-ae55b708149a"
+        },
+        {
+          "nodeId": "ed1acbff-0ad0-461b-ad4d-2da5275cae05",
+          "actionLabelToExecute": "a",
+          "childrenNodeIds": [
+            "35676f59-0354-41b8-8132-2a00ed4aae69"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {},
+          "parentNodeId": "9b298e79-9a7a-476f-a49a-ae55b708149a"
+        }
+      ]
+    }
+  ]
+}

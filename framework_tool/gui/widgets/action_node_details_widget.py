@@ -8,9 +8,9 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from typing import Optional, List # <<<--- List AGGIUNTO QUI
 
-from ...data_models.project_data import ProjectData
-from ...data_models.session_graph import ActionNode
-from ...data_models.action_definition import ActionDefinition, ConfiguredSubAction
+from framework_tool.data_models.project_data import ProjectData
+from framework_tool.data_models.session_graph import ActionNode
+from framework_tool.data_models.action_definition import ActionDefinition, ConfiguredSubAction
 
 class ActionNodeDetailsWidget(QWidget):
     """

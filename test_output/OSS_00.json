@@ -1,0 +1,595 @@
+{
+  "projectMetadata": {
+    "projectName": "New SessionActions Project",
+    "formatVersion": "1.0.0",
+    "creationDate": "2025-07-04T13:43:33.040376+00:00",
+    "author": ""
+  },
+  "actionLabels": [
+    "AddPrerequisite",
+    "Move2pp",
+    "Playanimation",
+    "Remove",
+    "SetPrerequisiteReason",
+    "ShowUI",
+    "Trash",
+    "UpdateHelp",
+    "Wear"
+  ],
+  "itemLabels": [
+    "amuchina",
+    "arcella",
+    "bottiglia",
+    "glove_L",
+    "glove_R",
+    "lenzuola",
+    "mano_dx_paziente_A",
+    "pacchetto_salviette",
+    "pp_tavolino_amuchina",
+    "pp_tavolino_arcella",
+    "pp_tavolino_lenzuola",
+    "pp_tavolino_pacchetto_salviette"
+  ],
+  "subActionLabels": [],
+  "subActionDefinitions": {},
+  "actionDefinitions": {
+    "AddPrerequisite": {
+      "description": "",
+      "autocomplete": true,
+      "customFields": [
+        {
+          "fieldName": "Type",
+          "fieldType": "EnumString",
+          "defaultValue": "hands",
+          "enumValues": [
+            "hands",
+            "handsSoap",
+            "gloves",
+            "coat"
+          ]
+        }
+      ]
+    },
+    "Move2pp": {
+      "description": "",
+      "autocomplete": false,
+      "customFields": [
+        {
+          "fieldName": "Item",
+          "fieldType": "ItemLabelReference"
+        },
+        {
+          "fieldName": "PPoint",
+          "fieldType": "ItemLabelReference"
+        }
+      ]
+    },
+    "Playanimation": {
+      "description": "",
+      "autocomplete": false,
+      "customFields": [
+        {
+          "fieldName": "ID",
+          "fieldType": "string"
+        }
+      ]
+    },
+    "Remove": {
+      "description": "",
+      "autocomplete": false,
+      "customFields": [
+        {
+          "fieldName": "Item",
+          "fieldType": "ItemLabelReference"
+        }
+      ]
+    },
+    "SetPrerequisiteReason": {
+      "description": "",
+      "autocomplete": true,
+      "customFields": [
+        {
+          "fieldName": "Text",
+          "fieldType": "string"
+        }
+      ]
+    },
+    "ShowUI": {
+      "description": "",
+      "autocomplete": false,
+      "customFields": [
+        {
+          "fieldName": "ID",
+          "fieldType": "string"
+        }
+      ]
+    },
+    "Trash": {
+      "description": "",
+      "autocomplete": false,
+      "customFields": [
+        {
+          "fieldName": "Item",
+          "fieldType": "ItemLabelReference"
+        }
+      ]
+    },
+    "UpdateHelp": {
+      "description": "",
+      "autocomplete": true,
+      "customFields": [
+        {
+          "fieldName": "Text",
+          "fieldType": "string"
+        }
+      ]
+    },
+    "Wear": {
+      "description": "",
+      "autocomplete": false,
+      "customFields": [
+        {
+          "fieldName": "Item",
+          "fieldType": "ItemLabelReference"
+        }
+      ]
+    }
+  },
+  "sessionActions": [
+    {
+      "sessionName": "OSS_00",
+      "steps": [
+        {
+          "stepId": "57931d18-a9cf-4d01-894c-f37b3f3fcfd0",
+          "stepName": "",
+          "rootNodeIds": [
+            "257b5b14-9dbf-4ef4-b94e-797f078daaa9"
+          ]
+        },
+        {
+          "stepId": "7260f471-ba4a-48a5-ada3-77fdc87380fe",
+          "stepName": "",
+          "rootNodeIds": [
+            "d8b22183-1b37-4e10-a125-309023c91731",
+            "6c362bde-3ac2-4dc0-a765-7cb0b7c2a60a"
+          ]
+        },
+        {
+          "stepId": "29ab4fac-3110-48a7-8c8b-04cc7882ff49",
+          "stepName": "",
+          "rootNodeIds": [
+            "f3d82383-d322-41a2-bd3e-33d45d619178"
+          ]
+        },
+        {
+          "stepId": "d62bf9e0-cd51-42d6-b5ab-9563dba86769",
+          "stepName": "",
+          "rootNodeIds": [
+            "57ae5d10-dc37-448d-b957-976e2a4d26c8"
+          ]
+        },
+        {
+          "stepId": "4478b63f-bc8c-49a9-855e-6b929abf9c15",
+          "stepName": "",
+          "rootNodeIds": [
+            "782c92a3-38b6-4c22-b7f5-4756fe725f88"
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "nodeId": "01ce7d2c-462e-4141-833e-bbb12f94ac61",
+          "actionLabelToExecute": "ShowUI",
+          "childrenNodeIds": [
+            "c2e37077-423b-493d-b3a3-391d2cf281d5"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "ID": "fixed_tira_su_paziente"
+          },
+          "parentNodeId": "888606bd-9aba-4b14-9f4f-d1fde78031c7"
+        },
+        {
+          "nodeId": "0f609466-921d-4756-9421-71662c5dc133",
+          "actionLabelToExecute": "Trash",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "glove_L"
+          },
+          "parentNodeId": "d2e7c97c-88a8-4f8c-a554-cec8af461a36"
+        },
+        {
+          "nodeId": "12349944-2d5a-4468-a125-a1ea4e4e3a92",
+          "actionLabelToExecute": "Playanimation",
+          "childrenNodeIds": [
+            "82c78e18-7df8-4c69-9e18-1c80a1496ce3"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "ID": "pulisci_paziente_A"
+          },
+          "parentNodeId": "f3d82383-d322-41a2-bd3e-33d45d619178"
+        },
+        {
+          "nodeId": "1cfb8ec3-b58f-47d3-95c4-7ec50fa7a2e4",
+          "actionLabelToExecute": "AddPrerequisite",
+          "childrenNodeIds": [
+            "888606bd-9aba-4b14-9f4f-d1fde78031c7"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {},
+          "parentNodeId": "cc3b0a25-7a4c-49e7-98fc-ad6f43da8532"
+        },
+        {
+          "nodeId": "1f695c2a-df12-4841-81a1-c884c96c7992",
+          "actionLabelToExecute": "Remove",
+          "childrenNodeIds": [
+            "9759621c-b3ab-4150-94fc-f7128a663bcd"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "glove_L"
+          },
+          "parentNodeId": "958125b7-58d5-412a-b2a1-7cfda6f6e4dc"
+        },
+        {
+          "nodeId": "257b5b14-9dbf-4ef4-b94e-797f078daaa9",
+          "actionLabelToExecute": "Playanimation",
+          "childrenNodeIds": [
+            "557806c1-c145-43ce-a885-2c3ff6329737"
+          ],
+          "instanceLabel": "Contestualizzazione",
+          "customFieldValues": {
+            "ID": "intro_oss_nurse"
+          }
+        },
+        {
+          "nodeId": "2c9633b3-4973-4683-a7af-56f620a730ff",
+          "actionLabelToExecute": "Move2pp",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "pacchetto_salviette",
+            "PPoint": "pp_tavolino_pacchetto_salviette"
+          },
+          "parentNodeId": "2d012d10-c0c0-4ca8-a583-89749128867e"
+        },
+        {
+          "nodeId": "2d012d10-c0c0-4ca8-a583-89749128867e",
+          "actionLabelToExecute": "AddPrerequisite",
+          "childrenNodeIds": [
+            "eb488120-4596-4655-8c6d-4250a88f043b",
+            "2c9633b3-4973-4683-a7af-56f620a730ff",
+            "acfd5897-ab45-4142-a12c-7ccbf9296956",
+            "6fc2e48b-07df-420f-afb7-0183f277dc9c"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Type": "gloves"
+          },
+          "parentNodeId": "68416c5a-a7e0-4fab-95cb-df5cf18505c4"
+        },
+        {
+          "nodeId": "2ef184bc-196a-4810-b6c2-17cb7377b99a",
+          "actionLabelToExecute": "Remove",
+          "childrenNodeIds": [
+            "8ef0c2cf-37fc-45fc-b0c9-52e0ecef9da5"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "glove_R"
+          },
+          "parentNodeId": "4dbb2434-e9d2-4321-88b3-360fcd0e160b"
+        },
+        {
+          "nodeId": "332bb746-62bc-4f21-a884-48b4bbc5e06f",
+          "actionLabelToExecute": "Remove",
+          "childrenNodeIds": [
+            "de50a4a0-c91b-4c52-96b9-f13c6c9e8026"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "glove_R"
+          },
+          "parentNodeId": "958125b7-58d5-412a-b2a1-7cfda6f6e4dc"
+        },
+        {
+          "nodeId": "3e4d528e-e3c6-425b-8fda-635bdf5d66d4",
+          "actionLabelToExecute": "ShowUI",
+          "childrenNodeIds": [
+            "cc3b0a25-7a4c-49e7-98fc-ad6f43da8532"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "ID": "follow_teleport"
+          },
+          "parentNodeId": "57ae5d10-dc37-448d-b957-976e2a4d26c8"
+        },
+        {
+          "nodeId": "4c7a1e85-221c-48b5-ba4c-0a5556e5ce8c",
+          "actionLabelToExecute": "ShowUI",
+          "childrenNodeIds": [
+            "8f51eb44-ed63-49ed-a213-9c1dde1111c6"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "ID": "fixed_prendi_bottiglia"
+          },
+          "parentNodeId": "986b789c-8e0e-4eea-a0b5-ef76def398b6"
+        },
+        {
+          "nodeId": "4dbb2434-e9d2-4321-88b3-360fcd0e160b",
+          "actionLabelToExecute": "UpdateHelp",
+          "childrenNodeIds": [
+            "d2e7c97c-88a8-4f8c-a554-cec8af461a36",
+            "2ef184bc-196a-4810-b6c2-17cb7377b99a"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Text": "Sfila i guanti e buttali nei rifiuti speciali"
+          },
+          "parentNodeId": "82c78e18-7df8-4c69-9e18-1c80a1496ce3"
+        },
+        {
+          "nodeId": "557806c1-c145-43ce-a885-2c3ff6329737",
+          "actionLabelToExecute": "UpdateHelp",
+          "childrenNodeIds": [
+            "e1368058-7da8-4df5-9b50-455eadaa46de"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Text": "Colleziona il materiale necessario per pulire il paziente: prendi dall’armadio salviette, amuchina, arcella e lenzuola pulite. Spostali sul tavolino ai piedi del letto."
+          },
+          "parentNodeId": "257b5b14-9dbf-4ef4-b94e-797f078daaa9"
+        },
+        {
+          "nodeId": "57ae5d10-dc37-448d-b957-976e2a4d26c8",
+          "actionLabelToExecute": "Playanimation",
+          "childrenNodeIds": [
+            "3e4d528e-e3c6-425b-8fda-635bdf5d66d4"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "ID": "audio_paziente_B_tirami_su"
+          }
+        },
+        {
+          "nodeId": "68416c5a-a7e0-4fab-95cb-df5cf18505c4",
+          "actionLabelToExecute": "AddPrerequisite",
+          "childrenNodeIds": [
+            "2d012d10-c0c0-4ca8-a583-89749128867e"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Type": "hands"
+          },
+          "parentNodeId": "e1368058-7da8-4df5-9b50-455eadaa46de"
+        },
+        {
+          "nodeId": "6c362bde-3ac2-4dc0-a765-7cb0b7c2a60a",
+          "actionLabelToExecute": "Wear",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "glove_R"
+          }
+        },
+        {
+          "nodeId": "6fc2e48b-07df-420f-afb7-0183f277dc9c",
+          "actionLabelToExecute": "Move2pp",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "lenzuola",
+            "PPoint": "pp_tavolino_lenzuola"
+          },
+          "parentNodeId": "2d012d10-c0c0-4ca8-a583-89749128867e"
+        },
+        {
+          "nodeId": "782c92a3-38b6-4c22-b7f5-4756fe725f88",
+          "actionLabelToExecute": "Playanimation",
+          "childrenNodeIds": [
+            "986b789c-8e0e-4eea-a0b5-ef76def398b6"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "ID": "paziente_A_richiesta_acqua"
+          }
+        },
+        {
+          "nodeId": "82c78e18-7df8-4c69-9e18-1c80a1496ce3",
+          "actionLabelToExecute": "ShowUI",
+          "childrenNodeIds": [
+            "4dbb2434-e9d2-4321-88b3-360fcd0e160b"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "ID": "fixed_cambio_lenzuola"
+          },
+          "parentNodeId": "12349944-2d5a-4468-a125-a1ea4e4e3a92"
+        },
+        {
+          "nodeId": "888606bd-9aba-4b14-9f4f-d1fde78031c7",
+          "actionLabelToExecute": "AddPrerequisite",
+          "childrenNodeIds": [
+            "01ce7d2c-462e-4141-833e-bbb12f94ac61"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Type": "gloves"
+          },
+          "parentNodeId": "1cfb8ec3-b58f-47d3-95c4-7ec50fa7a2e4"
+        },
+        {
+          "nodeId": "8ef0c2cf-37fc-45fc-b0c9-52e0ecef9da5",
+          "actionLabelToExecute": "Trash",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "glove_R"
+          },
+          "parentNodeId": "2ef184bc-196a-4810-b6c2-17cb7377b99a"
+        },
+        {
+          "nodeId": "8f51eb44-ed63-49ed-a213-9c1dde1111c6",
+          "actionLabelToExecute": "Move2pp",
+          "childrenNodeIds": [
+            "d7760593-c354-47f8-a1e8-f912513491f2"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "bottiglia",
+            "PPoint": "mano_dx_paziente_A"
+          },
+          "parentNodeId": "4c7a1e85-221c-48b5-ba4c-0a5556e5ce8c"
+        },
+        {
+          "nodeId": "958125b7-58d5-412a-b2a1-7cfda6f6e4dc",
+          "actionLabelToExecute": "UpdateHelp",
+          "childrenNodeIds": [
+            "1f695c2a-df12-4841-81a1-c884c96c7992",
+            "332bb746-62bc-4f21-a884-48b4bbc5e06f"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Text": "Sfila i guanti e cestinali"
+          },
+          "parentNodeId": "c2e37077-423b-493d-b3a3-391d2cf281d5"
+        },
+        {
+          "nodeId": "9759621c-b3ab-4150-94fc-f7128a663bcd",
+          "actionLabelToExecute": "Trash",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "glove_L"
+          },
+          "parentNodeId": "1f695c2a-df12-4841-81a1-c884c96c7992"
+        },
+        {
+          "nodeId": "986b789c-8e0e-4eea-a0b5-ef76def398b6",
+          "actionLabelToExecute": "UpdateHelp",
+          "childrenNodeIds": [
+            "4c7a1e85-221c-48b5-ba4c-0a5556e5ce8c"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Text": "Dai da bere al paziente: prendi la bottiglia sul comodino e porgila al paziente\n\n"
+          },
+          "parentNodeId": "782c92a3-38b6-4c22-b7f5-4756fe725f88"
+        },
+        {
+          "nodeId": "acfd5897-ab45-4142-a12c-7ccbf9296956",
+          "actionLabelToExecute": "Move2pp",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "arcella",
+            "PPoint": "pp_tavolino_arcella"
+          },
+          "parentNodeId": "2d012d10-c0c0-4ca8-a583-89749128867e"
+        },
+        {
+          "nodeId": "c2e37077-423b-493d-b3a3-391d2cf281d5",
+          "actionLabelToExecute": "Playanimation",
+          "childrenNodeIds": [
+            "958125b7-58d5-412a-b2a1-7cfda6f6e4dc"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "ID": "ghost_tira_su_paziente"
+          },
+          "parentNodeId": "01ce7d2c-462e-4141-833e-bbb12f94ac61"
+        },
+        {
+          "nodeId": "cc3b0a25-7a4c-49e7-98fc-ad6f43da8532",
+          "actionLabelToExecute": "SetPrerequisiteReason",
+          "childrenNodeIds": [
+            "1cfb8ec3-b58f-47d3-95c4-7ec50fa7a2e4"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Text": "Stai per entrare in contatto con il paziente"
+          },
+          "parentNodeId": "3e4d528e-e3c6-425b-8fda-635bdf5d66d4"
+        },
+        {
+          "nodeId": "d2e7c97c-88a8-4f8c-a554-cec8af461a36",
+          "actionLabelToExecute": "Remove",
+          "childrenNodeIds": [
+            "0f609466-921d-4756-9421-71662c5dc133"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "glove_L"
+          },
+          "parentNodeId": "4dbb2434-e9d2-4321-88b3-360fcd0e160b"
+        },
+        {
+          "nodeId": "d7760593-c354-47f8-a1e8-f912513491f2",
+          "actionLabelToExecute": "Playanimation",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "ID": "paziente_A_beve_bottiglia"
+          },
+          "parentNodeId": "8f51eb44-ed63-49ed-a213-9c1dde1111c6"
+        },
+        {
+          "nodeId": "d8b22183-1b37-4e10-a125-309023c91731",
+          "actionLabelToExecute": "Wear",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "glove_L"
+          }
+        },
+        {
+          "nodeId": "de50a4a0-c91b-4c52-96b9-f13c6c9e8026",
+          "actionLabelToExecute": "Trash",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "glove_R"
+          },
+          "parentNodeId": "332bb746-62bc-4f21-a884-48b4bbc5e06f"
+        },
+        {
+          "nodeId": "e1368058-7da8-4df5-9b50-455eadaa46de",
+          "actionLabelToExecute": "SetPrerequisiteReason",
+          "childrenNodeIds": [
+            "68416c5a-a7e0-4fab-95cb-df5cf18505c4"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Text": "Evitare di contaminare l’ambiente, presidi e paziente con possibili patogeni esterni."
+          },
+          "parentNodeId": "557806c1-c145-43ce-a885-2c3ff6329737"
+        },
+        {
+          "nodeId": "eb488120-4596-4655-8c6d-4250a88f043b",
+          "actionLabelToExecute": "Move2pp",
+          "childrenNodeIds": [],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "Item": "amuchina",
+            "PPoint": "pp_tavolino_amuchina"
+          },
+          "parentNodeId": "2d012d10-c0c0-4ca8-a583-89749128867e"
+        },
+        {
+          "nodeId": "f3d82383-d322-41a2-bd3e-33d45d619178",
+          "actionLabelToExecute": "ShowUI",
+          "childrenNodeIds": [
+            "12349944-2d5a-4468-a125-a1ea4e4e3a92"
+          ],
+          "instanceLabel": "",
+          "customFieldValues": {
+            "ID": "Fixed_pulisci_paziente"
+          }
+        }
+      ]
+    }
+  ]
+}
