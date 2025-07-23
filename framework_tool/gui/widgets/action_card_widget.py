@@ -37,6 +37,7 @@ class ActionCardWidget(QFrame):
 
         self._selected = False
         self._hover_buttons_visible = False
+        self._highlighted = False
         
         self._init_ui()
         self._create_hover_buttons()
@@ -233,6 +234,12 @@ class ActionCardWidget(QFrame):
             
             border_width = 2
             border_color_name = QColor(255, 140, 0).name() # Orange selection border
+        elif self._highlighted:
+            # Highlight with a bright yellow background
+            current_bg_color_name = QColor(255, 255, 0).name()  # Bright yellow
+            current_text_color_name = "black"
+            border_width = 3
+            border_color_name = QColor(255, 200, 0).name()  # Yellow-orange border
         
         # Apply style using stylesheet for QFrame (self)
         # Note: Using the class name "ActionCardWidget" in the stylesheet selector
@@ -271,6 +278,12 @@ class ActionCardWidget(QFrame):
             self._selected = selected
             self._apply_style() 
             # self.update() is implicitly called by setStyleSheet if style changes
+            
+    def set_highlighted(self, highlighted: bool):
+        """Set the highlighted state of the card (for filtering)."""
+        if self._highlighted != highlighted:
+            self._highlighted = highlighted
+            self._apply_style()
 
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:

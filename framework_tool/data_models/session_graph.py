@@ -76,17 +76,20 @@ class StepDefinition:
     def __init__(self,
                  step_id: Optional[str] = None,
                  step_name: str = "", 
-                 root_node_ids: Optional[List[str]] = None): 
+                 root_node_ids: Optional[List[str]] = None,
+                 enabled: bool = True): 
         
         self.step_id: str = step_id if step_id else str(uuid.uuid4())
         self.step_name: str = step_name
         self.root_node_ids: List[str] = root_node_ids if root_node_ids is not None else []
+        self.enabled: bool = enabled
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "stepId": self.step_id,
             "stepName": self.step_name,
-            "rootNodeIds": self.root_node_ids
+            "rootNodeIds": self.root_node_ids,
+            "enabled": self.enabled
         }
 
     @classmethod
@@ -95,7 +98,8 @@ class StepDefinition:
         return cls(
             step_id=step_id if step_id else str(uuid.uuid4()),
             step_name=data.get("stepName", ""),
-            root_node_ids=data.get("rootNodeIds", [])
+            root_node_ids=data.get("rootNodeIds", []),
+            enabled=data.get("enabled", True)
         )
 
 
@@ -108,7 +112,8 @@ class SessionActionsGraph:
     def __init__(self,
                  session_name: str,
                  steps: Optional[List[StepDefinition]] = None, 
-                 nodes: Optional[List[ActionNode]] = None): 
+                 nodes: Optional[List[ActionNode]] = None,
+                 notes: str = ""): 
         
         if not session_name:
             raise ValueError("session_name cannot be empty.")
@@ -116,6 +121,7 @@ class SessionActionsGraph:
         self.session_name: str = session_name
         self.steps: List[StepDefinition] = steps if steps is not None else []
         self.nodes: List[ActionNode] = nodes if nodes is not None else []
+        self.notes: str = notes
         
         self._nodes_by_id: Dict[str, ActionNode] = {node.node_id: node for node in self.nodes}
         self._validate_graph_integrity()
@@ -154,7 +160,8 @@ class SessionActionsGraph:
         return {
             "sessionName": self.session_name,
             "steps": [step.to_dict() for step in self.steps], 
-            "nodes": sorted([node.to_dict() for node in self.nodes], key=lambda n: n["nodeId"])
+            "nodes": sorted([node.to_dict() for node in self.nodes], key=lambda n: n["nodeId"]),
+            "notes": self.notes
         }
 
     @classmethod
@@ -172,6 +179,7 @@ class SessionActionsGraph:
         instance = cls(
             session_name=session_name,
             steps=steps_list,
-            nodes=nodes_list 
+            nodes=nodes_list,
+            notes=data.get("notes", "")
         )
         return instance

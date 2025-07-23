@@ -6,7 +6,7 @@ import os
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QScrollArea,
     QFrame, QGridLayout, QSpacerItem, QSizePolicy, QMenu,
-    QMessageBox, QInputDialog, QApplication, QMainWindow 
+    QMessageBox, QInputDialog, QApplication, QMainWindow, QCheckBox, QLineEdit
 )
 from PySide6.QtGui import QAction, QCursor, QColor, QPalette
 from PySide6.QtCore import Qt, Signal, Slot, QPoint
@@ -36,6 +36,8 @@ class SessionFlowEditorWidget(QWidget):
         self._selected_action_card: Optional[ActionCardWidget] = None
         self._step_frames: Dict[str, QFrame] = {}
         self._step_clipboard: Optional[List[ActionNode]] = None  # Store copied step content 
+        self._collapsed_steps: set = set()  # Track collapsed steps
+        self._filter_text: str = ""  # Track filter text
         self._init_ui()
 
     def _init_ui(self):
@@ -44,6 +46,21 @@ class SessionFlowEditorWidget(QWidget):
         self.session_name_display = QLabel("Editing Session: [No Session Loaded]")
         self.session_name_display.setStyleSheet("font-weight: bold; padding: 5px;")
         main_layout.addWidget(self.session_name_display)
+        
+        # Add filter controls
+        filter_layout = QHBoxLayout()
+        filter_layout.addWidget(QLabel("Filter Actions:"))
+        self.filter_input = QLineEdit()
+        self.filter_input.setPlaceholderText("Type action name to highlight...")
+        self.filter_input.textChanged.connect(self._on_filter_changed)
+        filter_layout.addWidget(self.filter_input)
+        
+        clear_filter_button = QPushButton("Clear")
+        clear_filter_button.clicked.connect(self._clear_filter)
+        filter_layout.addWidget(clear_filter_button)
+        
+        main_layout.addLayout(filter_layout)
+        
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidgetResizable(True)
         self.steps_container_widget = QWidget()
@@ -64,6 +81,24 @@ class SessionFlowEditorWidget(QWidget):
     def _enable_editing_controls(self, enabled: bool):
         self.scroll_area.setEnabled(enabled)
         self.create_step_button.setEnabled(enabled)
+        
+    def _on_filter_changed(self, text: str):
+        """Handle filter text changes."""
+        self._filter_text = text.lower().strip()
+        self._update_action_highlights()
+        
+    def _clear_filter(self):
+        """Clear the filter text."""
+        self.filter_input.setText("")
+        
+    def _update_action_highlights(self):
+        """Update action card highlights based on current filter."""
+        for node_id, card_widget in self._action_card_widgets.items():
+            if card_widget:
+                action_node = card_widget.action_node
+                is_match = (self._filter_text == "" or 
+                           self._filter_text in action_node.action_label_to_execute.lower())
+                card_widget.set_highlighted(is_match and self._filter_text != "")
 
     def load_session_graph(self, session_name: str, graph: Optional[SessionActionsGraph]):
         self._current_session_name = session_name
@@ -128,17 +163,56 @@ class SessionFlowEditorWidget(QWidget):
         step_frame.setProperty("step_definition_obj", step_def)
         step_main_layout = QVBoxLayout(step_frame)
         step_main_layout.setContentsMargins(5,5,5,5); step_main_layout.setSpacing(5)
+        
+        # Create title section with checkbox
+        title_section = QHBoxLayout()
+        title_section.setContentsMargins(0,0,0,0)
+        
+        # Create enabled checkbox
+        enabled_checkbox = QCheckBox()
+        enabled_checkbox.setChecked(step_def.enabled)
+        enabled_checkbox.stateChanged.connect(lambda state, sd=step_def: self._handle_step_enabled_changed(sd, state == Qt.CheckState.Checked.value))
+        title_section.addWidget(enabled_checkbox)
+        
+        # Create collapsible title button
         title_text = f"Step {step_index}"
         if step_def.step_name: title_text += f": {step_def.step_name}"
-        step_title_label = QLabel(title_text)
-        step_title_label.setStyleSheet("font-weight: bold; background-color: #E8E8E8; color: black; padding: 5px; border-radius: 3px;")
-        step_main_layout.addWidget(step_title_label)
+        
+        is_collapsed = step_def.step_id in self._collapsed_steps
+        collapse_indicator = "▶ " if is_collapsed else "▼ "
+        
+        step_title_button = QPushButton(collapse_indicator + title_text)
+        step_title_button.setStyleSheet("font-weight: bold; background-color: #E8E8E8; color: black; padding: 5px; border-radius: 3px; text-align: left;")
+        step_title_button.clicked.connect(lambda: self._toggle_step_collapse(step_def.step_id))
+        title_section.addWidget(step_title_button)
+        title_section.addStretch()
+        
+        # Add title section to main layout
+        title_widget = QWidget()
+        title_widget.setLayout(title_section)
+        step_main_layout.addWidget(title_widget)
+        
+        # Store reference to checkbox for later updates
+        step_frame.enabled_checkbox = enabled_checkbox
+        
+        # Create action grid container (collapsible content)
         action_grid_container = QWidget(step_frame) 
         action_grid_layout = QGridLayout(action_grid_container)
         action_grid_layout.setSpacing(5) 
         action_grid_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         step_main_layout.addWidget(action_grid_container)
-        self._build_action_grid_for_step(step_def, graph, action_grid_layout)
+        
+        # Store reference to action container for collapsing
+        step_frame.action_grid_container = action_grid_container
+        
+        # Hide content if collapsed
+        is_collapsed = step_def.step_id in self._collapsed_steps
+        action_grid_container.setVisible(not is_collapsed)
+        
+        # Build action grid only if not collapsed
+        if not is_collapsed:
+            self._build_action_grid_for_step(step_def, graph, action_grid_layout)
+            
         return step_frame
 
     def _build_action_grid_for_step(self, step_def: StepDefinition, graph: SessionActionsGraph, grid_layout: QGridLayout):
@@ -218,6 +292,11 @@ class SessionFlowEditorWidget(QWidget):
         # Add the current node's card to the grid, potentially spanning columns
         grid_layout.addWidget(card, current_row, start_col_for_this_node, 1, cols_spanned_by_this_node)
         self._action_card_widgets[action_node.node_id] = card
+        
+        # Apply current filter highlighting if any
+        if self._filter_text:
+            is_match = self._filter_text in action_node.action_label_to_execute.lower()
+            card.set_highlighted(is_match)
         
         return max_row_occupied_by_branch, cols_spanned_by_this_node
 
@@ -419,7 +498,7 @@ class SessionFlowEditorWidget(QWidget):
                 # Refresh the card's visual content
                 card_widget.refresh_content()
         
-        # Update step title labels to reflect any changes in step names
+        # Update step title labels and checkbox states to reflect any changes
         for step_def in self._current_session_graph.steps:
             if step_def.step_id in self._step_frames:
                 step_frame = self._step_frames[step_def.step_id]
@@ -428,12 +507,20 @@ class SessionFlowEditorWidget(QWidget):
                 if step_def.step_name:
                     title_text += f": {step_def.step_name}"
                 
+                # Update checkbox state
+                if hasattr(step_frame, 'enabled_checkbox'):
+                    step_frame.enabled_checkbox.setChecked(step_def.enabled)
+                
                 # Find and update the step title label
                 step_layout = step_frame.layout()
                 if step_layout and step_layout.count() > 0:
                     title_widget = step_layout.itemAt(0).widget()
-                    if isinstance(title_widget, QLabel):
-                        title_widget.setText(title_text)
+                    if hasattr(title_widget, 'layout'):
+                        title_section_layout = title_widget.layout()
+                        if title_section_layout and title_section_layout.count() > 1:
+                            title_label = title_section_layout.itemAt(1).widget()
+                            if isinstance(title_label, QLabel):
+                                title_label.setText(title_text)
         
         # Emit signal to notify other components that the view has been refreshed
         self.session_graph_changed.emit()
@@ -878,6 +965,25 @@ class SessionFlowEditorWidget(QWidget):
         self._current_session_graph.rebuild_node_lookup()
         self.load_session_graph(self._current_session_name, self._current_session_graph)
         self.session_graph_changed.emit()
+
+    def _handle_step_enabled_changed(self, step_def: StepDefinition, enabled: bool):
+        """Handle step enabled/disabled state change."""
+        if not self._current_session_graph:
+            return
+        
+        step_def.enabled = enabled
+        self.session_graph_changed.emit()
+        
+    def _toggle_step_collapse(self, step_id: str):
+        """Toggle the collapsed state of a step."""
+        if step_id in self._collapsed_steps:
+            self._collapsed_steps.remove(step_id)
+        else:
+            self._collapsed_steps.add(step_id)
+        
+        # Refresh the display to update collapse state
+        if self._current_session_graph:
+            self.load_session_graph(self._current_session_name, self._current_session_graph)
 
 # Standalone test
 if __name__ == '__main__':

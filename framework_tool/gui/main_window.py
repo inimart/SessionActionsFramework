@@ -8,7 +8,7 @@ from typing import Optional, List, Callable
 from PySide6.QtWidgets import (
     QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QFileDialog, QMessageBox, QDialog, QSplitter, QListWidget, QListWidgetItem,
-    QPushButton, QLineEdit, QInputDialog
+    QPushButton, QLineEdit, QInputDialog, QTextEdit, QGroupBox
 )
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtCore import Qt, Slot, QSettings
@@ -97,10 +97,30 @@ class MainWindow(QMainWindow):
         add_session_button = QPushButton("Add New Session...", self)
         add_session_button.clicked.connect(self._add_new_session)
         sessions_buttons_layout.addWidget(add_session_button)
+        
+        duplicate_session_button = QPushButton("Duplicate Session", self)
+        duplicate_session_button.clicked.connect(self._duplicate_selected_session)
+        sessions_buttons_layout.addWidget(duplicate_session_button)
+        
+        rename_session_button = QPushButton("Rename Session", self)
+        rename_session_button.clicked.connect(self._rename_selected_session)
+        sessions_buttons_layout.addWidget(rename_session_button)
+        
         remove_session_button = QPushButton("Remove Selected", self)
         remove_session_button.clicked.connect(self._remove_selected_session)
         sessions_buttons_layout.addWidget(remove_session_button)
         layout.addLayout(sessions_buttons_layout)
+        
+        # Add Session Notes area
+        notes_group = QGroupBox("Session Notes", self)
+        notes_layout = QVBoxLayout(notes_group)
+        
+        self.session_notes_text_edit = QTextEdit(self)
+        self.session_notes_text_edit.setPlaceholderText("Enter notes for the selected session...")
+        self.session_notes_text_edit.textChanged.connect(self._on_session_notes_changed)
+        notes_layout.addWidget(self.session_notes_text_edit)
+        
+        layout.addWidget(notes_group)
         
         parent_splitter.addWidget(panel)
 
@@ -322,6 +342,7 @@ class MainWindow(QMainWindow):
             self.session_names_list_widget.setCurrentRow(0)
         else:
             self.session_flow_editor_widget.load_session_graph("", None)
+            self.session_notes_text_edit.clear()
 
     def _refresh_actions_panel(self):
         """Refresh actions list and filter"""
@@ -362,11 +383,18 @@ class MainWindow(QMainWindow):
         """Handle session selection change"""
         if not current or not self.current_project_data:
             self.session_flow_editor_widget.load_session_graph("", None)
+            self.session_notes_text_edit.clear()
             return
         
         session_name = current.text()
         session_graph = next((s for s in self.current_project_data.session_actions if s.session_name == session_name), None)
         self.session_flow_editor_widget.load_session_graph(session_name, session_graph)
+        
+        # Update session notes
+        if session_graph:
+            self.session_notes_text_edit.blockSignals(True)
+            self.session_notes_text_edit.setPlainText(session_graph.notes)
+            self.session_notes_text_edit.blockSignals(False)
 
     def _add_new_session(self):
         """Add new session"""
@@ -400,6 +428,88 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.StandardButton.Yes:
             self.current_project_data.session_actions = [s for s in self.current_project_data.session_actions if s.session_name != session_name]
             self._refresh_session_switcher()
+            self.mark_dirty(True)
+
+    def _duplicate_selected_session(self):
+        """Duplicate the selected session"""
+        import copy
+        from framework_tool.data_models.session_graph import SessionActionsGraph
+        
+        current = self.session_names_list_widget.currentItem()
+        if not current or not self.current_project_data:
+            return
+            
+        session_name = current.text()
+        session_to_duplicate = next((s for s in self.current_project_data.session_actions if s.session_name == session_name), None)
+        if not session_to_duplicate:
+            return
+            
+        # Generate unique copy name
+        copy_name = f"{session_name}_copy"
+        copy_number = 1
+        while any(s.session_name == copy_name for s in self.current_project_data.session_actions):
+            copy_name = f"{session_name}_copy{copy_number}"
+            copy_number += 1
+            
+        # Deep copy the session
+        duplicated_session = SessionActionsGraph(
+            session_name=copy_name,
+            steps=copy.deepcopy(session_to_duplicate.steps),
+            nodes=copy.deepcopy(session_to_duplicate.nodes),
+            notes=session_to_duplicate.notes
+        )
+        
+        self.current_project_data.session_actions.append(duplicated_session)
+        self._refresh_session_switcher()
+        
+        # Select the new duplicated session
+        for i in range(self.session_names_list_widget.count()):
+            if self.session_names_list_widget.item(i).text() == copy_name:
+                self.session_names_list_widget.setCurrentRow(i)
+                break
+                
+        self.mark_dirty(True)
+
+    def _rename_selected_session(self):
+        """Rename the selected session"""
+        current = self.session_names_list_widget.currentItem()
+        if not current or not self.current_project_data:
+            return
+            
+        old_name = current.text()
+        new_name, ok = QInputDialog.getText(self, "Rename Session", "Enter new session name:", text=old_name)
+        if ok and new_name.strip() and new_name.strip() != old_name:
+            new_name = new_name.strip()
+            
+            # Check for duplicate name
+            if any(s.session_name == new_name for s in self.current_project_data.session_actions):
+                QMessageBox.warning(self, "Duplicate Name", f"A session with the name '{new_name}' already exists.")
+                return
+                
+            # Find and rename the session
+            session = next((s for s in self.current_project_data.session_actions if s.session_name == old_name), None)
+            if session:
+                session.session_name = new_name
+                self._refresh_session_switcher()
+                
+                # Select the renamed session
+                for i in range(self.session_names_list_widget.count()):
+                    if self.session_names_list_widget.item(i).text() == new_name:
+                        self.session_names_list_widget.setCurrentRow(i)
+                        break
+                        
+                self.mark_dirty(True)
+
+    def _on_session_notes_changed(self):
+        """Handle session notes text change"""
+        current = self.session_names_list_widget.currentItem()
+        if not current or not self.current_project_data:
+            return
+            
+        session_name = current.text()
+        session = next((s for s in self.current_project_data.session_actions if s.session_name == session_name), None)
+        if session:
+            session.notes = self.session_notes_text_edit.toPlainText()
             self.mark_dirty(True)
 
     # Actions panel handlers
