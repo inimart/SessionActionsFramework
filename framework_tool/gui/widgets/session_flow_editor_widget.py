@@ -36,6 +36,8 @@ class SessionFlowEditorWidget(QWidget):
         self._selected_action_card: Optional[ActionCardWidget] = None
         self._step_frames: Dict[str, QFrame] = {}
         self._step_clipboard: Optional[List[ActionNode]] = None  # Store copied step content 
+        self._action_clipboard: Optional[ActionNode] = None  # Store copied single action
+        self._branch_clipboard: Optional[List[ActionNode]] = None  # Store copied branch
         self._collapsed_steps: set = set()  # Track collapsed steps
         self._filter_text: str = ""  # Track filter text
         self._init_ui()
@@ -349,6 +351,9 @@ class SessionFlowEditorWidget(QWidget):
             move_step_down.setEnabled(current_step_index < len(self._current_session_graph.steps) -1 if self._current_session_graph else False)
             move_step_down.triggered.connect(lambda: self._handle_move_step(step_def, "down"))
         menu.addSeparator()
+        rename_step = menu.addAction("Rename Step")
+        rename_step.triggered.connect(lambda: self._handle_rename_step(step_def))
+        menu.addSeparator()
         remove_step = menu.addAction("Remove This Step")
         remove_step.triggered.connect(lambda: self._handle_remove_step(step_def))
         menu.exec(step_frame_widget.mapToGlobal(position))
@@ -359,13 +364,48 @@ class SessionFlowEditorWidget(QWidget):
         add_child_action = menu.addAction(f"Add Child Action to '{action_node.action_label_to_execute}'")
         add_child_action.triggered.connect(lambda: self._handle_add_child_action(action_node))
         
+        menu.addSeparator()
+        
+        # Copy/Paste actions
+        copy_action = menu.addAction("Copy action")
+        copy_action.triggered.connect(lambda: self._handle_copy_action(action_node))
+        
+        copy_branch = menu.addAction("Copy branch")
+        copy_branch.triggered.connect(lambda: self._handle_copy_branch(action_node))
+        
+        menu.addSeparator()
+        
+        paste_action_as_child = menu.addAction("Paste action content as child")
+        paste_action_as_child.setEnabled(self._action_clipboard is not None)
+        paste_action_as_child.triggered.connect(lambda: self._handle_paste_action_as_child(action_node))
+        
+        paste_action_as_brother = menu.addAction("Paste action content as brother")
+        paste_action_as_brother.setEnabled(self._action_clipboard is not None)
+        paste_action_as_brother.triggered.connect(lambda: self._handle_paste_action_as_brother(action_node))
+        
+        paste_branch_as_child = menu.addAction("Paste branch content as child")
+        paste_branch_as_child.setEnabled(self._branch_clipboard is not None)
+        paste_branch_as_child.triggered.connect(lambda: self._handle_paste_branch_as_child(action_node))
+        
+        paste_branch_as_brother = menu.addAction("Paste branch content as brother")
+        paste_branch_as_brother.setEnabled(self._branch_clipboard is not None)
+        paste_branch_as_brother.triggered.connect(lambda: self._handle_paste_branch_as_brother(action_node))
+        
+        paste_action_as_parent = menu.addAction("Paste action content as parent")
+        paste_action_as_parent.setEnabled(self._action_clipboard is not None)
+        paste_action_as_parent.triggered.connect(lambda: self._handle_paste_action_as_parent(action_node))
+        
+        paste_branch_as_parent = menu.addAction("Paste branch content as parent")
+        paste_branch_as_parent.setEnabled(self._branch_clipboard is not None)
+        paste_branch_as_parent.triggered.connect(lambda: self._handle_paste_branch_as_parent(action_node))
+        
         # Check conditions for move up/down actions
         can_move_up = self._can_move_action_up(action_node)
         can_move_down = self._can_move_action_down(action_node)
         
+        menu.addSeparator()
+        
         if can_move_up or can_move_down:
-            menu.addSeparator()
-            
             if can_move_up:
                 move_up_action = menu.addAction("Sposta action in su")
                 move_up_action.triggered.connect(lambda: self._handle_move_action_up(action_node))
@@ -773,10 +813,12 @@ class SessionFlowEditorWidget(QWidget):
         new_nodes = []
         
         for copied_node in self._step_clipboard:
-            # Create new node with new ID
+            # Create new node with new ID and preserve all properties
             new_node = ActionNode(
                 action_label_to_execute=copied_node.action_label_to_execute,
-                parent_node_id=None  # Will be set later
+                parent_node_id=None,  # Will be set later
+                instance_label=copied_node.instance_label,
+                custom_field_values=copy.deepcopy(copied_node.custom_field_values)
             )
             new_nodes.append(new_node)
             node_id_mapping[copied_node.node_id] = new_node.node_id
@@ -984,6 +1026,339 @@ class SessionFlowEditorWidget(QWidget):
         # Refresh the display to update collapse state
         if self._current_session_graph:
             self.load_session_graph(self._current_session_name, self._current_session_graph)
+
+    def _handle_copy_action(self, action_node: ActionNode):
+        """Copy a single action to clipboard."""
+        if not action_node:
+            return
+        
+        # Deep copy the action node with its custom field values
+        self._action_clipboard = copy.deepcopy(action_node)
+        self._branch_clipboard = None  # Clear branch clipboard
+        
+        QMessageBox.information(self, "Action Copied", f"Action '{action_node.action_label_to_execute}' copied to clipboard.")
+    
+    def _handle_copy_branch(self, action_node: ActionNode):
+        """Copy an entire branch starting from this action."""
+        if not self._current_session_graph or not action_node:
+            return
+        
+        # Collect all nodes in the branch
+        nodes_to_copy = []
+        queue = [action_node.node_id]
+        processed = set()
+        
+        while queue:
+            node_id = queue.pop(0)
+            if node_id in processed:
+                continue
+            processed.add(node_id)
+            
+            node = self._current_session_graph.get_node_by_id(node_id)
+            if node:
+                nodes_to_copy.append(node)
+                queue.extend(node.children_node_ids)
+        
+        # Deep copy the branch
+        self._branch_clipboard = copy.deepcopy(nodes_to_copy)
+        self._action_clipboard = None  # Clear action clipboard
+        
+        QMessageBox.information(self, "Branch Copied", f"Branch starting from '{action_node.action_label_to_execute}' with {len(self._branch_clipboard)} actions copied to clipboard.")
+    
+    def _handle_paste_action_as_child(self, parent_action_node: ActionNode):
+        """Paste a single action as child of the selected action."""
+        if not self._current_session_graph or not self._action_clipboard:
+            return
+        
+        # Create new action node with new ID but same properties
+        new_action_node = ActionNode(
+            action_label_to_execute=self._action_clipboard.action_label_to_execute,
+            parent_node_id=parent_action_node.node_id,
+            instance_label=self._action_clipboard.instance_label,
+            custom_field_values=copy.deepcopy(self._action_clipboard.custom_field_values)
+        )
+        
+        self._current_session_graph.nodes.append(new_action_node)
+        parent_action_node.children_node_ids.append(new_action_node.node_id)
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
+    
+    def _handle_paste_action_as_brother(self, sibling_action_node: ActionNode):
+        """Paste a single action as sibling of the selected action."""
+        if not self._current_session_graph or not self._action_clipboard:
+            return
+        
+        # Create new action node with same parent as sibling
+        new_action_node = ActionNode(
+            action_label_to_execute=self._action_clipboard.action_label_to_execute,
+            parent_node_id=sibling_action_node.parent_node_id,
+            instance_label=self._action_clipboard.instance_label,
+            custom_field_values=copy.deepcopy(self._action_clipboard.custom_field_values)
+        )
+        
+        self._current_session_graph.nodes.append(new_action_node)
+        
+        # Add to same parent or step
+        if sibling_action_node.parent_node_id:
+            parent_node = self._current_session_graph.get_node_by_id(sibling_action_node.parent_node_id)
+            if parent_node:
+                parent_node.children_node_ids.append(new_action_node.node_id)
+        else:
+            # Root node - add to same step
+            for step_def in self._current_session_graph.steps:
+                if sibling_action_node.node_id in step_def.root_node_ids:
+                    step_def.root_node_ids.append(new_action_node.node_id)
+                    break
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
+    
+    def _handle_paste_branch_as_child(self, parent_action_node: ActionNode):
+        """Paste an entire branch as child of the selected action."""
+        if not self._current_session_graph or not self._branch_clipboard:
+            return
+        
+        # Map old IDs to new IDs
+        node_id_mapping = {}
+        new_nodes = []
+        
+        # Create new nodes with new IDs
+        for copied_node in self._branch_clipboard:
+            new_node = ActionNode(
+                action_label_to_execute=copied_node.action_label_to_execute,
+                parent_node_id=None,  # Will be set later
+                instance_label=copied_node.instance_label,
+                custom_field_values=copy.deepcopy(copied_node.custom_field_values)
+            )
+            new_nodes.append(new_node)
+            node_id_mapping[copied_node.node_id] = new_node.node_id
+        
+        # Update parent-child relationships
+        for i, copied_node in enumerate(self._branch_clipboard):
+            new_node = new_nodes[i]
+            
+            # Set parent - root of branch becomes child of parent_action_node
+            if i == 0:  # First node (root of branch)
+                new_node.parent_node_id = parent_action_node.node_id
+            elif copied_node.parent_node_id in node_id_mapping:
+                new_node.parent_node_id = node_id_mapping[copied_node.parent_node_id]
+            
+            # Update children references
+            new_node.children_node_ids = [
+                node_id_mapping[child_id] for child_id in copied_node.children_node_ids
+                if child_id in node_id_mapping
+            ]
+        
+        # Add new nodes to graph
+        self._current_session_graph.nodes.extend(new_nodes)
+        
+        # Add root of branch to parent's children
+        if new_nodes:
+            parent_action_node.children_node_ids.append(new_nodes[0].node_id)
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
+    
+    def _handle_paste_branch_as_brother(self, sibling_action_node: ActionNode):
+        """Paste an entire branch as sibling of the selected action."""
+        if not self._current_session_graph or not self._branch_clipboard:
+            return
+        
+        # Map old IDs to new IDs
+        node_id_mapping = {}
+        new_nodes = []
+        
+        # Create new nodes with new IDs
+        for copied_node in self._branch_clipboard:
+            new_node = ActionNode(
+                action_label_to_execute=copied_node.action_label_to_execute,
+                parent_node_id=None,  # Will be set later
+                instance_label=copied_node.instance_label,
+                custom_field_values=copy.deepcopy(copied_node.custom_field_values)
+            )
+            new_nodes.append(new_node)
+            node_id_mapping[copied_node.node_id] = new_node.node_id
+        
+        # Update parent-child relationships
+        for i, copied_node in enumerate(self._branch_clipboard):
+            new_node = new_nodes[i]
+            
+            # Set parent - root of branch has same parent as sibling
+            if i == 0:  # First node (root of branch)
+                new_node.parent_node_id = sibling_action_node.parent_node_id
+            elif copied_node.parent_node_id in node_id_mapping:
+                new_node.parent_node_id = node_id_mapping[copied_node.parent_node_id]
+            
+            # Update children references
+            new_node.children_node_ids = [
+                node_id_mapping[child_id] for child_id in copied_node.children_node_ids
+                if child_id in node_id_mapping
+            ]
+        
+        # Add new nodes to graph
+        self._current_session_graph.nodes.extend(new_nodes)
+        
+        # Add root of branch to same parent or step as sibling
+        if new_nodes:
+            if sibling_action_node.parent_node_id:
+                parent_node = self._current_session_graph.get_node_by_id(sibling_action_node.parent_node_id)
+                if parent_node:
+                    parent_node.children_node_ids.append(new_nodes[0].node_id)
+            else:
+                # Root node - add to same step
+                for step_def in self._current_session_graph.steps:
+                    if sibling_action_node.node_id in step_def.root_node_ids:
+                        step_def.root_node_ids.append(new_nodes[0].node_id)
+                        break
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
+    
+    def _handle_rename_step(self, step_def: StepDefinition):
+        """Handle renaming a step."""
+        if not self._current_session_graph:
+            return
+        
+        current_name = step_def.step_name or ""
+        new_name, ok = QInputDialog.getText(
+            self, 
+            "Rename Step", 
+            "Enter new name for the step:",
+            text=current_name
+        )
+        
+        if ok:
+            step_def.step_name = new_name.strip()
+            self.load_session_graph(self._current_session_name, self._current_session_graph)
+            self.session_graph_changed.emit()
+    
+    def _handle_paste_action_as_parent(self, child_action_node: ActionNode):
+        """Paste a single action as parent of the selected action."""
+        if not self._current_session_graph or not self._action_clipboard:
+            return
+        
+        # Create new action node that will become the parent
+        new_parent_node = ActionNode(
+            action_label_to_execute=self._action_clipboard.action_label_to_execute,
+            parent_node_id=child_action_node.parent_node_id,
+            instance_label=self._action_clipboard.instance_label,
+            custom_field_values=copy.deepcopy(self._action_clipboard.custom_field_values)
+        )
+        
+        # Add the new parent node to the graph
+        self._current_session_graph.nodes.append(new_parent_node)
+        
+        # Update relationships: new node becomes parent of selected node
+        if child_action_node.parent_node_id:
+            # Child has a parent - update existing parent's children
+            parent_node = self._current_session_graph.get_node_by_id(child_action_node.parent_node_id)
+            if parent_node:
+                # Replace child_action_node with new_parent_node in parent's children
+                parent_node.children_node_ids = [
+                    new_parent_node.node_id if child_id == child_action_node.node_id else child_id
+                    for child_id in parent_node.children_node_ids
+                ]
+        else:
+            # Child is a root node - update step's root nodes
+            for step_def in self._current_session_graph.steps:
+                if child_action_node.node_id in step_def.root_node_ids:
+                    step_def.root_node_ids = [
+                        new_parent_node.node_id if root_id == child_action_node.node_id else root_id
+                        for root_id in step_def.root_node_ids
+                    ]
+                    break
+        
+        # Set new parent-child relationship
+        child_action_node.parent_node_id = new_parent_node.node_id
+        new_parent_node.children_node_ids = [child_action_node.node_id]
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
+    
+    def _handle_paste_branch_as_parent(self, child_action_node: ActionNode):
+        """Paste an entire branch as parent of the selected action."""
+        if not self._current_session_graph or not self._branch_clipboard:
+            return
+        
+        # Map old IDs to new IDs
+        node_id_mapping = {}
+        new_nodes = []
+        
+        # Create new nodes with new IDs
+        for copied_node in self._branch_clipboard:
+            new_node = ActionNode(
+                action_label_to_execute=copied_node.action_label_to_execute,
+                parent_node_id=None,  # Will be set later
+                instance_label=copied_node.instance_label,
+                custom_field_values=copy.deepcopy(copied_node.custom_field_values)
+            )
+            new_nodes.append(new_node)
+            node_id_mapping[copied_node.node_id] = new_node.node_id
+        
+        # Update parent-child relationships within the branch
+        for i, copied_node in enumerate(self._branch_clipboard):
+            new_node = new_nodes[i]
+            
+            # Update parent reference within the branch
+            if copied_node.parent_node_id in node_id_mapping:
+                new_node.parent_node_id = node_id_mapping[copied_node.parent_node_id]
+            
+            # Update children references
+            new_node.children_node_ids = [
+                node_id_mapping[child_id] for child_id in copied_node.children_node_ids
+                if child_id in node_id_mapping
+            ]
+        
+        # Find the leaf nodes (nodes without children) in the pasted branch
+        leaf_nodes = [node for node in new_nodes if not node.children_node_ids]
+        
+        if not new_nodes:
+            return
+        
+        # The root of the pasted branch takes the place of child_action_node
+        branch_root = new_nodes[0]
+        branch_root.parent_node_id = child_action_node.parent_node_id
+        
+        # Update relationships: branch root replaces child_action_node
+        if child_action_node.parent_node_id:
+            # Child has a parent - update existing parent's children
+            parent_node = self._current_session_graph.get_node_by_id(child_action_node.parent_node_id)
+            if parent_node:
+                parent_node.children_node_ids = [
+                    branch_root.node_id if child_id == child_action_node.node_id else child_id
+                    for child_id in parent_node.children_node_ids
+                ]
+        else:
+            # Child is a root node - update step's root nodes
+            for step_def in self._current_session_graph.steps:
+                if child_action_node.node_id in step_def.root_node_ids:
+                    step_def.root_node_ids = [
+                        branch_root.node_id if root_id == child_action_node.node_id else root_id
+                        for root_id in step_def.root_node_ids
+                    ]
+                    break
+        
+        # Connect child_action_node to all leaf nodes of the pasted branch
+        child_action_node.parent_node_id = None  # Will be set to one of the leaf nodes
+        for leaf_node in leaf_nodes:
+            leaf_node.children_node_ids.append(child_action_node.node_id)
+        
+        # Set the parent of child_action_node to the first leaf node
+        if leaf_nodes:
+            child_action_node.parent_node_id = leaf_nodes[0].node_id
+        
+        # Add all new nodes to the graph
+        self._current_session_graph.nodes.extend(new_nodes)
+        
+        self._current_session_graph.rebuild_node_lookup()
+        self.load_session_graph(self._current_session_name, self._current_session_graph)
+        self.session_graph_changed.emit()
 
 # Standalone test
 if __name__ == '__main__':
