@@ -19,7 +19,8 @@ class ActionNode:
                  parent_node_id: Optional[str] = None, # ID of the ActionNode that this is a child of
                  children_node_ids: Optional[List[str]] = None, # ORDERED list of child node IDs
                  instance_label: str = "",  # Custom label for this instance
-                 custom_field_values: Optional[Dict[str, Any]] = None): # Values for custom fields
+                 custom_field_values: Optional[Dict[str, Any]] = None,  # Values for custom fields
+                 notes: str = ""):  # Contextual notes for this instance
         
         if not action_label_to_execute:
             raise ValueError("action_label_to_execute cannot be empty for an ActionNode.")
@@ -35,6 +36,7 @@ class ActionNode:
         # Instance customization
         self.instance_label: str = instance_label
         self.custom_field_values: Dict[str, Any] = custom_field_values if custom_field_values is not None else {}
+        self.notes: str = notes
         
     def to_dict(self) -> Dict[str, Any]:
         data = {
@@ -42,7 +44,8 @@ class ActionNode:
             "actionLabelToExecute": self.action_label_to_execute,
             "childrenNodeIds": self.children_node_ids,
             "instanceLabel": self.instance_label,
-            "customFieldValues": self.custom_field_values
+            "customFieldValues": self.custom_field_values,
+            "notes": self.notes
         }
         if self.parent_node_id is not None:
             data["parentNodeId"] = self.parent_node_id
@@ -64,7 +67,8 @@ class ActionNode:
             parent_node_id=data.get("parentNodeId"),
             children_node_ids=data.get("childrenNodeIds", []),
             instance_label=data.get("instanceLabel", ""),
-            custom_field_values=data.get("customFieldValues", {})
+            custom_field_values=data.get("customFieldValues", {}),
+            notes=data.get("notes", "")
         )
 
 class StepDefinition:

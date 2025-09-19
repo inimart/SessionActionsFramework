@@ -50,7 +50,10 @@ class ActionCardWidget(QFrame):
         # self.setLineWidth(1) # Border width will be controlled by stylesheet
 
         self.setMinimumSize(140, 80) 
-        self.setMaximumHeight(120)  
+        self.setMaximumHeight(120)
+        
+        # Enable keyboard focus for the action card
+        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)  
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -288,6 +291,9 @@ class ActionCardWidget(QFrame):
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
             self.clicked.emit(self.action_node.node_id)
+            # Ensure the parent widget gets focus for keyboard events
+            if self.parent():
+                self.parent().setFocus()
         super().mousePressEvent(event)
 
     def enterEvent(self, event):
@@ -311,13 +317,8 @@ class ActionCardWidget(QFrame):
             self._hover_buttons_visible = True
             self._position_hover_buttons()
             
-            # Show different buttons based on node level
-            # Level 0 (root) nodes can only have children and siblings
-            # Level > 0 nodes can have parent, children, and siblings
-            node_level = self._get_node_level()
-            
-            if node_level > 0:
-                self.add_parent_btn.show()
+            # Show parent button for all nodes (including level 0)
+            self.add_parent_btn.show()
             self.add_child_btn.show()
             self.add_sibling_btn.show()
     

@@ -76,6 +76,17 @@ class ActionInstanceCustomizerWidget(QWidget):
         
         main_layout.addWidget(customization_group)
         
+        # Notes Panel (editable)
+        notes_group = QGroupBox("Notes", self)
+        notes_layout = QVBoxLayout(notes_group)
+        
+        self.notes_text_edit = QTextEdit(self)
+        self.notes_text_edit.setPlaceholderText("Add contextual notes for this action instance...")
+        self.notes_text_edit.textChanged.connect(self._on_notes_changed)
+        notes_layout.addWidget(self.notes_text_edit)
+        
+        main_layout.addWidget(notes_group)
+        
         # Action Definition Details (read-only)
         definition_group = QGroupBox("Action Definition Details", self)
         definition_layout = QFormLayout(definition_group)
@@ -108,6 +119,11 @@ class ActionInstanceCustomizerWidget(QWidget):
         self.instance_label_edit.blockSignals(True)
         self.instance_label_edit.setText(action_node.instance_label)
         self.instance_label_edit.blockSignals(False)
+        
+        # Display notes
+        self.notes_text_edit.blockSignals(True)
+        self.notes_text_edit.setPlainText(action_node.notes if hasattr(action_node, 'notes') else "")
+        self.notes_text_edit.blockSignals(False)
         
         # Get action definition
         self._current_action_definition = self.project_data_ref.action_definitions.get(
@@ -296,16 +312,24 @@ class ActionInstanceCustomizerWidget(QWidget):
             self._current_action_node.instance_label = text
             self.instance_changed.emit()
     
+    def _on_notes_changed(self):
+        """Handle notes change."""
+        if self._current_action_node:
+            self._current_action_node.notes = self.notes_text_edit.toPlainText()
+            self.instance_changed.emit()
+    
     def _enable_editing(self, enabled: bool):
         """Enable or disable editing controls."""
         self.instance_label_edit.setEnabled(enabled)
         self.custom_fields_table.setEnabled(enabled)
+        self.notes_text_edit.setEnabled(enabled)
     
     def clear_details(self):
         """Clear all displayed details."""
         self.action_label_display.clear()
         self.node_id_display.clear()
         self.instance_label_edit.clear()
+        self.notes_text_edit.clear()
         self.autocomplete_display.setChecked(False)
         self.description_display.clear()
         self.custom_fields_table.setRowCount(0)

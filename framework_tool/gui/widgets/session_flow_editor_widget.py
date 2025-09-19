@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QFrame, QGridLayout, QSpacerItem, QSizePolicy, QMenu,
     QMessageBox, QInputDialog, QApplication, QMainWindow, QCheckBox, QLineEdit
 )
-from PySide6.QtGui import QAction, QCursor, QColor, QPalette
+from PySide6.QtGui import QAction, QCursor, QColor, QPalette, QKeyEvent
 from PySide6.QtCore import Qt, Signal, Slot, QPoint
 from typing import Optional, List, Dict, Any, Tuple
 import copy
@@ -48,6 +48,9 @@ class SessionFlowEditorWidget(QWidget):
         self.session_name_display = QLabel("Editing Session: [No Session Loaded]")
         self.session_name_display.setStyleSheet("font-weight: bold; padding: 5px;")
         main_layout.addWidget(self.session_name_display)
+        
+        # Set focus policy to enable keyboard events
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         
         # Add filter controls
         filter_layout = QHBoxLayout()
@@ -310,6 +313,8 @@ class SessionFlowEditorWidget(QWidget):
         if self._selected_action_card:
             self._selected_action_card.set_selected(True)
             self.action_node_selected.emit(self._selected_action_card.action_node)
+            # Ensure this widget has focus to receive keyboard events
+            self.setFocus()
         else: self.action_node_selected.emit(None)
 
     @Slot(QPoint)
@@ -818,7 +823,8 @@ class SessionFlowEditorWidget(QWidget):
                 action_label_to_execute=copied_node.action_label_to_execute,
                 parent_node_id=None,  # Will be set later
                 instance_label=copied_node.instance_label,
-                custom_field_values=copy.deepcopy(copied_node.custom_field_values)
+                custom_field_values=copy.deepcopy(copied_node.custom_field_values),
+                notes=copied_node.notes if hasattr(copied_node, 'notes') else ""
             )
             new_nodes.append(new_node)
             node_id_mapping[copied_node.node_id] = new_node.node_id
@@ -1075,7 +1081,8 @@ class SessionFlowEditorWidget(QWidget):
             action_label_to_execute=self._action_clipboard.action_label_to_execute,
             parent_node_id=parent_action_node.node_id,
             instance_label=self._action_clipboard.instance_label,
-            custom_field_values=copy.deepcopy(self._action_clipboard.custom_field_values)
+            custom_field_values=copy.deepcopy(self._action_clipboard.custom_field_values),
+            notes=self._action_clipboard.notes if hasattr(self._action_clipboard, 'notes') else ""
         )
         
         self._current_session_graph.nodes.append(new_action_node)
@@ -1095,7 +1102,8 @@ class SessionFlowEditorWidget(QWidget):
             action_label_to_execute=self._action_clipboard.action_label_to_execute,
             parent_node_id=sibling_action_node.parent_node_id,
             instance_label=self._action_clipboard.instance_label,
-            custom_field_values=copy.deepcopy(self._action_clipboard.custom_field_values)
+            custom_field_values=copy.deepcopy(self._action_clipboard.custom_field_values),
+            notes=self._action_clipboard.notes if hasattr(self._action_clipboard, 'notes') else ""
         )
         
         self._current_session_graph.nodes.append(new_action_node)
@@ -1131,7 +1139,8 @@ class SessionFlowEditorWidget(QWidget):
                 action_label_to_execute=copied_node.action_label_to_execute,
                 parent_node_id=None,  # Will be set later
                 instance_label=copied_node.instance_label,
-                custom_field_values=copy.deepcopy(copied_node.custom_field_values)
+                custom_field_values=copy.deepcopy(copied_node.custom_field_values),
+                notes=copied_node.notes if hasattr(copied_node, 'notes') else ""
             )
             new_nodes.append(new_node)
             node_id_mapping[copied_node.node_id] = new_node.node_id
@@ -1178,7 +1187,8 @@ class SessionFlowEditorWidget(QWidget):
                 action_label_to_execute=copied_node.action_label_to_execute,
                 parent_node_id=None,  # Will be set later
                 instance_label=copied_node.instance_label,
-                custom_field_values=copy.deepcopy(copied_node.custom_field_values)
+                custom_field_values=copy.deepcopy(copied_node.custom_field_values),
+                notes=copied_node.notes if hasattr(copied_node, 'notes') else ""
             )
             new_nodes.append(new_node)
             node_id_mapping[copied_node.node_id] = new_node.node_id
@@ -1247,7 +1257,8 @@ class SessionFlowEditorWidget(QWidget):
             action_label_to_execute=self._action_clipboard.action_label_to_execute,
             parent_node_id=child_action_node.parent_node_id,
             instance_label=self._action_clipboard.instance_label,
-            custom_field_values=copy.deepcopy(self._action_clipboard.custom_field_values)
+            custom_field_values=copy.deepcopy(self._action_clipboard.custom_field_values),
+            notes=self._action_clipboard.notes if hasattr(self._action_clipboard, 'notes') else ""
         )
         
         # Add the new parent node to the graph
@@ -1296,7 +1307,8 @@ class SessionFlowEditorWidget(QWidget):
                 action_label_to_execute=copied_node.action_label_to_execute,
                 parent_node_id=None,  # Will be set later
                 instance_label=copied_node.instance_label,
-                custom_field_values=copy.deepcopy(copied_node.custom_field_values)
+                custom_field_values=copy.deepcopy(copied_node.custom_field_values),
+                notes=copied_node.notes if hasattr(copied_node, 'notes') else ""
             )
             new_nodes.append(new_node)
             node_id_mapping[copied_node.node_id] = new_node.node_id
@@ -1359,6 +1371,26 @@ class SessionFlowEditorWidget(QWidget):
         self._current_session_graph.rebuild_node_lookup()
         self.load_session_graph(self._current_session_name, self._current_session_graph)
         self.session_graph_changed.emit()
+    
+    def keyPressEvent(self, event: QKeyEvent):
+        """Handle keyboard shortcuts for action removal."""
+        if self._selected_action_card and self._selected_action_card.action_node:
+            modifiers = event.modifiers()
+            key = event.key()
+            
+            if key == Qt.Key.Key_Delete:
+                if modifiers == Qt.KeyboardModifier.ShiftModifier:
+                    # Shift+Delete: Remove branch
+                    self._handle_remove_action_node(self._selected_action_card.action_node)
+                else:
+                    # Delete only: Remove action only
+                    self._handle_remove_action_only(self._selected_action_card.action_node)
+            else:
+                # Pass event to parent if not handled
+                super().keyPressEvent(event)
+        else:
+            # Pass event to parent if no action is selected
+            super().keyPressEvent(event)
 
 # Standalone test
 if __name__ == '__main__':

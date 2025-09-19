@@ -35,6 +35,8 @@ class MainWindow(QMainWindow):
         self.current_project_filepath: Optional[str] = None
         self.is_dirty: bool = False
         self.settings = QSettings()
+        # Load last used directory from settings
+        self.last_used_directory = self.settings.value("last_used_directory", os.getcwd())
         self._init_ui()
         self.new_project()
 
@@ -254,6 +256,14 @@ class MainWindow(QMainWindow):
         if self.is_dirty != dirty_status:
             self.is_dirty = dirty_status
             self._update_window_title()
+    
+    def _save_last_used_directory(self, filepath: str):
+        """Save the directory of the given filepath as the last used directory."""
+        if filepath:
+            directory = os.path.dirname(filepath)
+            if directory:
+                self.last_used_directory = directory
+                self.settings.setValue("last_used_directory", directory)
 
     @Slot()
     def new_project_action(self):
@@ -272,12 +282,14 @@ class MainWindow(QMainWindow):
     @Slot()
     def open_project_action(self):
         if not self._check_unsaved_changes(): return
-        start_dir = os.getcwd() 
+        # Use last used directory or current directory as fallback
+        start_dir = self.last_used_directory if os.path.exists(self.last_used_directory) else os.getcwd()
         filepath, _ = QFileDialog.getOpenFileName(self, "Open Project File", start_dir, "JSON Files (*.json);;All Files (*)")
         if filepath:
             try:
                 self.current_project_data = json_handler.load_project(filepath)
                 self.current_project_filepath = filepath
+                self._save_last_used_directory(filepath)  # Save the directory for future use
                 self.mark_dirty(False) 
                 self._update_window_title()
                 self.statusBar().showMessage(f"Project '{os.path.basename(filepath)}' loaded.", 5000)
@@ -296,6 +308,7 @@ class MainWindow(QMainWindow):
         else:
             try:
                 json_handler.save_project(self.current_project_data, self.current_project_filepath)
+                self._save_last_used_directory(self.current_project_filepath)  # Save the directory for future use
                 self.mark_dirty(False) 
                 self.statusBar().showMessage(f"Project saved to '{self.current_project_filepath}'.", 5000)
                 print(f"Project saved to: {self.current_project_filepath}")
@@ -310,10 +323,15 @@ class MainWindow(QMainWindow):
         if not self.current_project_data:
             QMessageBox.warning(self, "No Project", "There is no project data to save.")
             return False
-        start_dir = os.path.dirname(self.current_project_filepath) if self.current_project_filepath else os.getcwd()
+        # Use the directory of current file if available, otherwise use last used directory
+        if self.current_project_filepath:
+            start_dir = os.path.dirname(self.current_project_filepath)
+        else:
+            start_dir = self.last_used_directory if os.path.exists(self.last_used_directory) else os.getcwd()
         filepath, _ = QFileDialog.getSaveFileName(self, "Save Project As", start_dir, "JSON Files (*.json);;All Files (*)")
         if filepath:
-            self.current_project_filepath = filepath 
+            self.current_project_filepath = filepath
+            self._save_last_used_directory(filepath)  # Save the directory for future use
             return self.save_project_action() 
         return False
 
