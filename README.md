@@ -47,39 +47,18 @@ SessionActionFramework is an intuitive visual tool that enables developers and d
    
    ```
 
-# On Windows:
+### On Windows:
 
 venv\Scripts\activate
 
-# On Linux/Mac:
 
-source venv/bin/activate
-
-```
-
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
 
 ## Quick Start
 
 ### Running the Application
 
 ```bash
-# Using the convenience script
-python run_framework_tool.py
-
-# Or directly
 python framework_tool/main.py
-```
-
-### Windows Users
-
-A batch file is provided for convenience:
-
-```bash
-run_framework_tool.bat
 ```
 
 ## User Guide
@@ -95,7 +74,7 @@ When you launch the application, a new project is automatically created. You can
 
 The application features a 5-panel layout:
 
-![loading-ag-657](imgs/UI.png)
+![UI](imgs/UI.png)
 
 1. **Session Switcher**: Manage multiple session flows within your project
 2. **Actions Panel**: Define and configure reusable action templates
